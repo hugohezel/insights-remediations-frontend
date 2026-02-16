@@ -581,11 +581,11 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Remediation Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Remediation Plan"/i),
+          screen.getByText(/Create new plan "New Remediation Plan"/i),
         ).toBeInTheDocument();
       });
       const createOption = screen.getByText(
-        /Create new playbook "New Remediation Plan"/i,
+        /Create new plan "New Remediation Plan"/i,
       );
       await user.click(createOption);
 
@@ -668,10 +668,10 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -709,10 +709,10 @@ describe('RemediationWizardV2', () => {
       // Wait for "Create new" option to appear and select it to close dropdown
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -759,10 +759,10 @@ describe('RemediationWizardV2', () => {
       // Wait for "Create new" option to appear and select it to close dropdown
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -802,10 +802,10 @@ describe('RemediationWizardV2', () => {
       // Wait for "Create new" option to appear and select it to close dropdown
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -854,10 +854,10 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -905,10 +905,10 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -1013,10 +1013,10 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -1067,10 +1067,10 @@ describe('RemediationWizardV2', () => {
       await user.type(input, 'New Plan');
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
@@ -1115,10 +1115,10 @@ describe('RemediationWizardV2', () => {
       // Wait for "Create new" option to appear and select it to close dropdown
       await waitFor(() => {
         expect(
-          screen.getByText(/Create new playbook "New Plan"/i),
+          screen.getByText(/Create new plan "New Plan"/i),
         ).toBeInTheDocument();
       });
-      const createOption = screen.getByText(/Create new playbook "New Plan"/i);
+      const createOption = screen.getByText(/Create new plan "New Plan"/i);
       await user.click(createOption);
 
       await waitFor(() => {
