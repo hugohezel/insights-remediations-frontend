@@ -29,10 +29,8 @@ import {
   PencilAltIcon,
   TimesIcon,
 } from '@patternfly/react-icons';
-import { formatDate } from '../Cells';
 import { useVerifyName } from '../../Utilities/useVerifyName';
 import InsightsLink from '@redhat-cloud-services/frontend-components/InsightsLink';
-import { execStatus } from './helpers';
 import { useAddNotification } from '@redhat-cloud-services/frontend-components-notifications/hooks';
 import { pluralize } from '../../Utilities/utils';
 import useRemediations from '../../Utilities/Hooks/api/useRemediations';
@@ -43,9 +41,7 @@ const DetailsCard = ({
   onNavigateToTab,
   allRemediations,
   refetch,
-  lastRemediationPlaybookRun,
   refetchAllRemediations,
-  isPlaybookRunsLoading,
 }) => {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(details?.name);
@@ -181,8 +177,6 @@ const DetailsCard = ({
       });
     }
   };
-
-  const formatedDate = new Date(lastRemediationPlaybookRun?.updated_at);
 
   return (
     <Card isFullHeight>
@@ -327,23 +321,6 @@ const DetailsCard = ({
               )}
             </DescriptionListDescription>
           </DescriptionListGroup>
-          {/* Last Execution Status */}
-          <DescriptionListGroup>
-            <DescriptionListTerm>Latest execution status</DescriptionListTerm>
-            <DescriptionListDescription>
-              {isPlaybookRunsLoading ? (
-                <Spinner size="md" />
-              ) : (
-                <Button
-                  variant="link"
-                  isInline
-                  onClick={() => onNavigateToTab(null, 'executionHistory')}
-                >
-                  {execStatus(lastRemediationPlaybookRun?.status, formatedDate)}
-                </Button>
-              )}
-            </DescriptionListDescription>
-          </DescriptionListGroup>
           {/* Actions */}
           <DescriptionListGroup>
             <DescriptionListTerm>
@@ -410,20 +387,6 @@ const DetailsCard = ({
               </Button>
             </DescriptionListDescription>
           </DescriptionListGroup>
-          {/* Last Modified */}
-          <DescriptionListGroup>
-            <DescriptionListTerm>Last modified</DescriptionListTerm>
-            <DescriptionListDescription>
-              {formatDate(details?.updated_at)}
-            </DescriptionListDescription>
-          </DescriptionListGroup>
-          {/* Created by */}
-          <DescriptionListGroup>
-            <DescriptionListTerm>Created</DescriptionListTerm>
-            <DescriptionListDescription>
-              {formatDate(details?.created_at)}
-            </DescriptionListDescription>
-          </DescriptionListGroup>
         </DescriptionList>
       </CardBody>
     </Card>
@@ -455,9 +418,7 @@ DetailsCard.propTypes = {
   allRemediations: PropTypes.array,
   updateRemPlan: PropTypes.func,
   refetch: PropTypes.func,
-  lastRemediationPlaybookRun: PropTypes.object,
   refetchAllRemediations: PropTypes.func,
-  isPlaybookRunsLoading: PropTypes.bool,
 };
 
 export default DetailsCard;
