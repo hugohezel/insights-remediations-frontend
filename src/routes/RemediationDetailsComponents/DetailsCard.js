@@ -43,7 +43,7 @@ const DetailsCard = ({
   onNavigateToTab,
   allRemediations,
   refetch,
-  remediationPlaybookRuns,
+  lastRemediationPlaybookRun,
   refetchAllRemediations,
   isPlaybookRunsLoading,
 }) => {
@@ -182,7 +182,7 @@ const DetailsCard = ({
     }
   };
 
-  const formatedDate = new Date(remediationPlaybookRuns?.updated_at);
+  const formatedDate = new Date(lastRemediationPlaybookRun?.updated_at);
 
   return (
     <Card isFullHeight>
@@ -339,7 +339,7 @@ const DetailsCard = ({
                   isInline
                   onClick={() => onNavigateToTab(null, 'executionHistory')}
                 >
-                  {execStatus(remediationPlaybookRuns?.status, formatedDate)}
+                  {execStatus(lastRemediationPlaybookRun?.status, formatedDate)}
                 </Button>
               )}
             </DescriptionListDescription>
@@ -455,7 +455,7 @@ DetailsCard.propTypes = {
   allRemediations: PropTypes.array,
   updateRemPlan: PropTypes.func,
   refetch: PropTypes.func,
-  remediationPlaybookRuns: PropTypes.object,
+  lastRemediationPlaybookRun: PropTypes.object,
   refetchAllRemediations: PropTypes.func,
   isPlaybookRunsLoading: PropTypes.bool,
 };

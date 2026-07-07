@@ -20,7 +20,7 @@ const DetailsGeneralContent = ({
   onNavigateToTab,
   allRemediations,
   permissions,
-  remediationPlaybookRuns,
+  lastRemediationPlaybookRun,
   refetchAllRemediations,
   isPlaybookRunsLoading,
   actionPoints: actionPointsProp,
@@ -111,7 +111,7 @@ const DetailsGeneralContent = ({
             updateRemPlan={updateRemPlan}
             onNavigateToTab={onNavigateToTab}
             allRemediations={allRemediations}
-            remediationPlaybookRuns={remediationPlaybookRuns}
+            lastRemediationPlaybookRun={lastRemediationPlaybookRun}
             refetchAllRemediations={refetchAllRemediations}
             isPlaybookRunsLoading={isPlaybookRunsLoading}
           />
@@ -140,7 +140,7 @@ DetailsGeneralContent.propTypes = {
   onNavigateToTab: PropTypes.func,
   allRemediations: PropTypes.array,
   permissions: PropTypes.object,
-  remediationPlaybookRuns: PropTypes.any,
+  lastRemediationPlaybookRun: PropTypes.any,
   refetchAllRemediations: PropTypes.func,
   detailsLoading: PropTypes.bool,
   isPlaybookRunsLoading: PropTypes.bool,

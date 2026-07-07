@@ -180,7 +180,7 @@ const RemediationDetails = () => {
                 onNavigateToTab={handleTabClick}
                 allRemediations={allRemediationsData}
                 permissions={context.permissions}
-                remediationPlaybookRuns={remediationPlaybookRuns?.data[0]}
+                lastRemediationPlaybookRun={remediationPlaybookRuns?.data[0]}
                 detailsLoading={detailsLoading}
                 isPlaybookRunsLoading={isPlaybookRunsLoading}
                 actionPoints={actionPoints}
