@@ -10,6 +10,7 @@ import { calculateActionPointsFromSummary } from '../../components/helpers';
 import { calculateExecutionLimits } from './helpers';
 import DetailsCard from './DetailsCard';
 import ProgressCard from './ProgressCard';
+import ActivityCard from './ActivityCard';
 
 const DetailsGeneralContent = ({
   details,
@@ -124,6 +125,14 @@ const DetailsGeneralContent = ({
             onNavigateToTab={onNavigateToTab}
             details={details}
             actionPoints={actionPoints}
+          />
+        </GridItem>
+        <GridItem span={12} md={6}>
+          <ActivityCard
+            details={details}
+            lastRemediationPlaybookRun={lastRemediationPlaybookRun}
+            isPlaybookRunsLoading={isPlaybookRunsLoading}
+            onNavigateToTab={onNavigateToTab}
           />
         </GridItem>
       </Grid>
