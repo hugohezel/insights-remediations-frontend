@@ -4,16 +4,18 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
+  calculateExpiresInDays,
   getStatusMeta,
   StatusLabel,
   getStatusText,
   getStatusColor,
   renderConnectionStatus,
+  textualizeExpiresInDays,
 } from './helpers';
 
 // Mock PatternFly components
 jest.mock('@patternfly/react-core', () => ({
-  Icon: (props) => <div data-testid="icon">{props.children}</div>,
+  Icon: (props) => <span data-testid="icon">{props.children}</span>,
   Label: (props) => (
     <span
       data-testid="label"
@@ -35,12 +37,14 @@ jest.mock('@patternfly/react-core', () => ({
 }));
 
 jest.mock('@patternfly/react-icons', () => ({
-  CheckCircleIcon: () => <div data-testid="check-circle-icon">CheckCircle</div>,
-  InProgressIcon: () => <div data-testid="in-progress-icon">InProgress</div>,
-  ExclamationCircleIcon: () => (
-    <div data-testid="exclamation-circle-icon">ExclamationCircle</div>
+  CheckCircleIcon: () => (
+    <span data-testid="check-circle-icon">CheckCircle</span>
   ),
-  BanIcon: () => <div data-testid="ban-icon">Ban</div>,
+  InProgressIcon: () => <span data-testid="in-progress-icon">InProgress</span>,
+  ExclamationCircleIcon: () => (
+    <span data-testid="exclamation-circle-icon">ExclamationCircle</span>
+  ),
+  BanIcon: () => <span data-testid="ban-icon">Ban</span>,
 }));
 
 jest.mock('@redhat-cloud-services/frontend-components/InsightsLink', () => {
@@ -52,6 +56,40 @@ jest.mock('@redhat-cloud-services/frontend-components/InsightsLink', () => {
 });
 
 describe('routes/helpers', () => {
+  describe('expiration helpers', () => {
+    const now = Date.parse('2026-07-08T12:00:00Z');
+
+    beforeEach(() => {
+      jest.spyOn(Date, 'now').mockReturnValue(now);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should round up remaining days until expiration', () => {
+      const expiresAtDate = new Date('2026-07-28T00:00:00Z');
+
+      expect(calculateExpiresInDays(expiresAtDate)).toBe(20);
+    });
+
+    it('should treat an expiration earlier today as expired', () => {
+      const expiresAtDate = new Date('2026-07-08T00:00:00Z');
+
+      expect(calculateExpiresInDays(expiresAtDate)).toBe(-1);
+    });
+
+    it('should render day-based expiration text for short periods', () => {
+      expect(textualizeExpiresInDays(20)).toBe('20 days');
+      expect(textualizeExpiresInDays(1)).toBe('1 day');
+    });
+
+    it('should render month-based expiration text for longer periods', () => {
+      expect(textualizeExpiresInDays(30)).toBe('1 month');
+      expect(textualizeExpiresInDays(69)).toBe('2 months');
+    });
+  });
+
   describe('getStatusMeta', () => {
     it('should return success meta for success status', () => {
       const result = getStatusMeta('success');
