@@ -125,6 +125,7 @@ describe('DetailsGeneralContent', () => {
     lastRemediationPlaybookRun: { id: 'run-1', status: 'success' },
     refetchAllRemediations: jest.fn(),
     isPlaybookRunsLoading: false,
+    retentionPolicyRefreshNonce: 0,
   };
 
   beforeEach(() => {
@@ -466,6 +467,9 @@ describe('DetailsGeneralContent', () => {
       expect(activityCardProps.isPlaybookRunsLoading).toBe(
         defaultProps.isPlaybookRunsLoading,
       );
+      expect(activityCardProps.retentionPolicyRefreshNonce).toBe(
+        defaultProps.retentionPolicyRefreshNonce,
+      );
     });
 
     it('should handle missing optional props', () => {
@@ -497,6 +501,7 @@ describe('DetailsGeneralContent', () => {
       );
       expect(activityCardProps.lastRemediationPlaybookRun).toBeUndefined();
       expect(activityCardProps.isPlaybookRunsLoading).toBeUndefined();
+      expect(activityCardProps.retentionPolicyRefreshNonce).toBeUndefined();
     });
 
     it('should render child components properly', () => {

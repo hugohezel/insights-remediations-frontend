@@ -23,6 +23,7 @@ const DetailsGeneralContent = ({
   lastRemediationPlaybookRun,
   refetchAllRemediations,
   isPlaybookRunsLoading,
+  retentionPolicyRefreshNonce,
   actionPoints: actionPointsProp,
 }) => {
   const actionPointsComputed = useMemo(() => {
@@ -128,6 +129,7 @@ const DetailsGeneralContent = ({
             lastRemediationPlaybookRun={lastRemediationPlaybookRun}
             isPlaybookRunsLoading={isPlaybookRunsLoading}
             onNavigateToTab={onNavigateToTab}
+            retentionPolicyRefreshNonce={retentionPolicyRefreshNonce}
           />
         </GridItem>
       </Grid>
@@ -146,6 +148,7 @@ DetailsGeneralContent.propTypes = {
   lastRemediationPlaybookRun: PropTypes.any,
   refetchAllRemediations: PropTypes.func,
   isPlaybookRunsLoading: PropTypes.bool,
+  retentionPolicyRefreshNonce: PropTypes.number,
   actionPoints: PropTypes.number,
 };
 

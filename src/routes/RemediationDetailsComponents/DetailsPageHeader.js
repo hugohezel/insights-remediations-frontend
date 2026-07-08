@@ -29,6 +29,7 @@ const RemediationDetailsPageHeader = ({
   remediationPlaybookRuns,
   isPlaybookRunsLoading,
   actionPoints = 0,
+  onRetentionPolicyUpdated,
 }) => {
   const addNotification = useAddNotification();
   const handleDownload = useCallback(() => {
@@ -133,6 +134,7 @@ const RemediationDetailsPageHeader = ({
                   refetchAllRemediations={refetchAllRemediations}
                   updateRemPlan={updateRemPlan}
                   refetchRemediationDetails={refetchRemediationDetails}
+                  onRetentionPolicyUpdated={onRetentionPolicyUpdated}
                 />
               </FlexItem>
             </Flex>
@@ -182,6 +184,7 @@ RemediationDetailsPageHeader.propTypes = {
   remediationPlaybookRuns: PropTypes.object,
   isPlaybookRunsLoading: PropTypes.bool,
   actionPoints: PropTypes.number,
+  onRetentionPolicyUpdated: PropTypes.func,
 };
 
 export default RemediationDetailsPageHeader;

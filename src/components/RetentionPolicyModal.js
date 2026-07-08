@@ -85,7 +85,7 @@ DurationSelect.propTypes = {
   isDisabled: PropTypes.bool,
 };
 
-const RetentionPolicyModal = ({ isOpen, onClose }) => {
+const RetentionPolicyModal = ({ isOpen, onClose, onRetentionPolicyUpdated }) => {
   const addNotification = useAddNotification();
   const [retentionDays, setRetentionDays] = useState(null);
   const [warningDays, setWarningDays] = useState(null);
@@ -163,6 +163,7 @@ const RetentionPolicyModal = ({ isOpen, onClose }) => {
         dismissable: true,
         autoDismiss: true,
       });
+      onRetentionPolicyUpdated?.();
       onClose();
     } catch (error) {
       console.error(error);
@@ -260,6 +261,7 @@ const RetentionPolicyModal = ({ isOpen, onClose }) => {
 RetentionPolicyModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
+  onRetentionPolicyUpdated: PropTypes.func,
 };
 
 export default RetentionPolicyModal;
