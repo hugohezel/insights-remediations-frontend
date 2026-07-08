@@ -85,7 +85,11 @@ DurationSelect.propTypes = {
   isDisabled: PropTypes.bool,
 };
 
-const RetentionPolicyModal = ({ isOpen, onClose, onRetentionPolicyUpdated }) => {
+const RetentionPolicyModal = ({
+  isOpen,
+  onClose,
+  onRetentionPolicyUpdated,
+}) => {
   const addNotification = useAddNotification();
   const [retentionDays, setRetentionDays] = useState(null);
   const [warningDays, setWarningDays] = useState(null);

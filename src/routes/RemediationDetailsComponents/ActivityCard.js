@@ -96,8 +96,7 @@ const ActivityCard = ({
     result: orgConfig,
     error: orgConfigError,
     refetch: refetchOrgConfig,
-  } =
-    useRemediations(getOrgConfig);
+  } = useRemediations(getOrgConfig);
 
   useEffect(() => {
     if (retentionPolicyRefreshNonce > 0 && refetchOrgConfig) {

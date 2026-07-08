@@ -45,7 +45,7 @@ describe('ActivityCard', () => {
   ) => {
     useRemediations.mockReturnValue(orgConfigResponse);
 
-    const renderResult = render(
+    const view = render(
       <ActivityCard
         details={details}
         lastRemediationPlaybookRun={lastRemediationPlaybookRun}
@@ -55,7 +55,7 @@ describe('ActivityCard', () => {
       />,
     );
 
-    return { onNavigateToTab, ...renderResult };
+    return { onNavigateToTab, ...view };
   };
 
   beforeEach(() => {
@@ -129,12 +129,7 @@ describe('ActivityCard', () => {
 
       expect(refetchOrgConfig).not.toHaveBeenCalled();
 
-      rerender(
-        <ActivityCard
-          {...props}
-          retentionPolicyRefreshNonce={1}
-        />,
-      );
+      rerender(<ActivityCard {...props} retentionPolicyRefreshNonce={1} />);
 
       expect(refetchOrgConfig).toHaveBeenCalledTimes(1);
     });

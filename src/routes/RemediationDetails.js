@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import useRemediations from '../Utilities/Hooks/api/useRemediations';
 import { updateRemediationWrapper } from './api';
