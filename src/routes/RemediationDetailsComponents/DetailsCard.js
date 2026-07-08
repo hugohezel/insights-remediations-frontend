@@ -255,6 +255,11 @@ const DetailsCard = ({
                 variant="link"
                 onClick={() => setEditing(!editing)}
                 className="pf-v6-u-ml-sm"
+                aria-label={
+                  editing
+                    ? 'Close remediation plan name editor'
+                    : 'Edit remediation plan name'
+                }
               ></Button>
             </DescriptionListTerm>
             <DescriptionListDescription>
@@ -303,6 +308,7 @@ const DetailsCard = ({
                         variant="link"
                         onClick={() => onSubmit(value)}
                         isDisabled={nameStatus !== 'valid'}
+                        aria-label="Save remediation plan name"
                       ></Button>
                       <Button
                         icon={
@@ -310,6 +316,7 @@ const DetailsCard = ({
                         }
                         variant="link"
                         onClick={() => setEditing(false)}
+                        aria-label="Cancel remediation plan name edit"
                       ></Button>
                     </Flex>
                   </FlexItem>
