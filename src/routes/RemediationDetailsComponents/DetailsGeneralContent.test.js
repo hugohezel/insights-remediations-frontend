@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import DetailsGeneralContent from './DetailsGeneralContent';
 
@@ -28,6 +29,18 @@ jest.mock('./ProgressCard', () => {
   };
 });
 
+jest.mock('./ActivityCard', () => {
+  return function MockActivityCard(props) {
+    return (
+      <div data-testid="activity-card">
+        <div data-testid="activity-card-props">
+          {JSON.stringify(props, null, 2)}
+        </div>
+      </div>
+    );
+  };
+});
+
 // Mock PatternFly components
 jest.mock('@patternfly/react-core', () => ({
   Alert: function MockAlert({
@@ -35,6 +48,7 @@ jest.mock('@patternfly/react-core', () => ({
     variant,
     title,
     className,
+    actionClose,
     children,
     ...props
   }) {
@@ -47,8 +61,20 @@ jest.mock('@patternfly/react-core', () => ({
         {...props}
       >
         <div data-testid="alert-title">{title}</div>
+        {actionClose}
         {children}
       </div>
+    );
+  },
+  AlertActionCloseButton: function MockAlertActionCloseButton({
+    title,
+    onClose,
+    ...props
+  }) {
+    return (
+      <button data-testid="alert-close" onClick={onClose} {...props}>
+        {title}
+      </button>
     );
   },
   Grid: function MockGrid({ hasGutter, children, ...props }) {
@@ -68,17 +94,20 @@ jest.mock('@patternfly/react-core', () => ({
 }));
 
 describe('DetailsGeneralContent', () => {
+  const createDetails = (overrides = {}) => ({
+    id: 'rem-1',
+    name: 'Test Remediation',
+    issue_count: 0,
+    system_count: 5,
+    issue_count_details: {},
+    auto_reboot: true,
+    created_at: '2023-01-01T00:00:00Z',
+    updated_at: '2023-01-01T00:00:00Z',
+    ...overrides,
+  });
+
   const defaultProps = {
-    details: {
-      id: 'rem-1',
-      name: 'Test Remediation',
-      issue_count: 0,
-      system_count: 5,
-      issue_count_details: {},
-      auto_reboot: true,
-      created_at: '2023-01-01T00:00:00Z',
-      updated_at: '2023-01-01T00:00:00Z',
-    },
+    details: createDetails(),
     onRename: jest.fn(),
     refetch: jest.fn(),
     remediationStatus: {
@@ -94,8 +123,9 @@ describe('DetailsGeneralContent', () => {
     permissions: {
       execute: true,
     },
-    remediationPlaybookRuns: [{ id: 'run-1', status: 'success' }],
+    lastRemediationPlaybookRun: { id: 'run-1', status: 'success' },
     refetchAllRemediations: jest.fn(),
+    isPlaybookRunsLoading: false,
   };
 
   beforeEach(() => {
@@ -109,6 +139,7 @@ describe('DetailsGeneralContent', () => {
       expect(screen.getByTestId('grid')).toBeInTheDocument();
       expect(screen.getByTestId('details-card')).toBeInTheDocument();
       expect(screen.getByTestId('progress-card')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-card')).toBeInTheDocument();
     });
 
     it('should render with correct structure', () => {
@@ -118,6 +149,7 @@ describe('DetailsGeneralContent', () => {
       expect(screen.getByTestId('grid')).toBeInTheDocument();
       expect(screen.getByTestId('details-card')).toBeInTheDocument();
       expect(screen.getByTestId('progress-card')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-card')).toBeInTheDocument();
     });
 
     it('should render grid with correct props', () => {
@@ -131,7 +163,7 @@ describe('DetailsGeneralContent', () => {
       render(<DetailsGeneralContent {...defaultProps} />);
 
       const gridItems = screen.getAllByTestId('grid-item');
-      expect(gridItems).toHaveLength(2);
+      expect(gridItems).toHaveLength(3);
 
       // First grid item (DetailsCard)
       expect(gridItems[0]).toHaveAttribute('data-span', '12');
@@ -140,6 +172,10 @@ describe('DetailsGeneralContent', () => {
       // Second grid item (ProgressCard)
       expect(gridItems[1]).toHaveAttribute('data-span', '12');
       expect(gridItems[1]).toHaveAttribute('data-md', '6');
+
+      // Third grid item (ActivityCard)
+      expect(gridItems[2]).toHaveAttribute('data-span', '12');
+      expect(gridItems[2]).toHaveAttribute('data-md', '6');
     });
   });
 
@@ -275,6 +311,20 @@ describe('DetailsGeneralContent', () => {
       expect(progressCardProps.readyOrNot).toBe(false);
     });
 
+    it('should calculate readyOrNot as false when execution limits are exceeded', () => {
+      const props = {
+        ...defaultProps,
+        details: createDetails({ system_count: 101 }),
+      };
+
+      render(<DetailsGeneralContent {...props} />);
+
+      const progressCardProps = JSON.parse(
+        screen.getByTestId('progress-card-props').textContent,
+      );
+      expect(progressCardProps.readyOrNot).toBe(false);
+    });
+
     it('should handle missing permissions object', () => {
       const props = {
         ...defaultProps,
@@ -335,6 +385,34 @@ describe('DetailsGeneralContent', () => {
 
       expect(screen.queryByTestId('alert')).not.toBeInTheDocument();
     });
+
+    it('should render AAP alert when execution limits are exceeded', () => {
+      const props = {
+        ...defaultProps,
+        actionPoints: 1001,
+      };
+
+      render(<DetailsGeneralContent {...props} />);
+
+      expect(screen.getByTestId('alert')).toBeInTheDocument();
+      expect(screen.getByTestId('alert-title')).toHaveTextContent(
+        'Remediate at scale with Red Hat Ansible Automation Platform (AAP)',
+      );
+    });
+
+    it('should dismiss the AAP alert when the close button is clicked', async () => {
+      const user = userEvent.setup();
+      const props = {
+        ...defaultProps,
+        actionPoints: 1001,
+      };
+
+      render(<DetailsGeneralContent {...props} />);
+
+      await user.click(screen.getByTestId('alert-close'));
+
+      expect(screen.queryByTestId('alert')).not.toBeInTheDocument();
+    });
   });
 
   describe('Props passing to child components', () => {
@@ -352,8 +430,11 @@ describe('DetailsGeneralContent', () => {
       expect(detailsCardProps.allRemediations).toEqual(
         defaultProps.allRemediations,
       );
-      expect(detailsCardProps.remediationPlaybookRuns).toEqual(
-        defaultProps.remediationPlaybookRuns,
+      expect(detailsCardProps.lastRemediationPlaybookRun).toEqual(
+        defaultProps.lastRemediationPlaybookRun,
+      );
+      expect(detailsCardProps.isPlaybookRunsLoading).toBe(
+        defaultProps.isPlaybookRunsLoading,
       );
 
       // Check that DetailsCard component is rendered (functions are passed but not visible in JSON)
@@ -372,14 +453,31 @@ describe('DetailsGeneralContent', () => {
       );
       expect(progressCardProps.permissions).toEqual(defaultProps.permissions);
       expect(progressCardProps.readyOrNot).toBe(true);
+      expect(progressCardProps.actionPoints).toBe(0);
 
       // Function props won't appear in JSON, but component should render
       expect(screen.getByTestId('progress-card')).toBeInTheDocument();
     });
 
+    it('should pass correct props to ActivityCard', () => {
+      render(<DetailsGeneralContent {...defaultProps} />);
+
+      const activityCardProps = JSON.parse(
+        screen.getByTestId('activity-card-props').textContent,
+      );
+
+      expect(activityCardProps.details).toEqual(defaultProps.details);
+      expect(activityCardProps.lastRemediationPlaybookRun).toEqual(
+        defaultProps.lastRemediationPlaybookRun,
+      );
+      expect(activityCardProps.isPlaybookRunsLoading).toBe(
+        defaultProps.isPlaybookRunsLoading,
+      );
+    });
+
     it('should handle missing optional props', () => {
       const minimalProps = {
-        details: jest.fn(),
+        details: createDetails(),
         onRename: jest.fn(),
         refetch: jest.fn(),
         remediationStatus: {
@@ -392,6 +490,7 @@ describe('DetailsGeneralContent', () => {
 
       expect(screen.getByTestId('details-card')).toBeInTheDocument();
       expect(screen.getByTestId('progress-card')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-card')).toBeInTheDocument();
 
       const detailsCardProps = JSON.parse(
         screen.getByTestId('details-card-props').textContent,
@@ -399,8 +498,14 @@ describe('DetailsGeneralContent', () => {
       expect(detailsCardProps.updateRemPlan).toBeUndefined();
       expect(detailsCardProps.onNavigateToTab).toBeUndefined();
       expect(detailsCardProps.allRemediations).toBeUndefined();
-      expect(detailsCardProps.remediationPlaybookRuns).toBeUndefined();
+      expect(detailsCardProps.lastRemediationPlaybookRun).toBeUndefined();
       expect(detailsCardProps.refetchAllRemediations).toBeUndefined();
+
+      const activityCardProps = JSON.parse(
+        screen.getByTestId('activity-card-props').textContent,
+      );
+      expect(activityCardProps.lastRemediationPlaybookRun).toBeUndefined();
+      expect(activityCardProps.isPlaybookRunsLoading).toBeUndefined();
     });
 
     it('should render child components properly', () => {
@@ -409,6 +514,7 @@ describe('DetailsGeneralContent', () => {
       // Function props won't appear in JSON.stringify, but the components should render correctly
       expect(screen.getByTestId('details-card')).toBeInTheDocument();
       expect(screen.getByTestId('progress-card')).toBeInTheDocument();
+      expect(screen.getByTestId('activity-card')).toBeInTheDocument();
 
       // This confirms the props are being passed (even if we can't see functions in JSON)
       const detailsCardProps = JSON.parse(
@@ -429,6 +535,7 @@ describe('DetailsGeneralContent', () => {
           connectionError: { errors: [{ status: 403 }] },
           connectedSystems: 0,
         },
+        details: createDetails({ system_count: 101 }),
       };
 
       render(<DetailsGeneralContent {...props} />);
@@ -440,6 +547,9 @@ describe('DetailsGeneralContent', () => {
     });
 
     it('should handle null remediationStatus', () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
       const props = {
         ...defaultProps,
         remediationStatus: null,
@@ -447,8 +557,10 @@ describe('DetailsGeneralContent', () => {
 
       render(<DetailsGeneralContent {...props} />);
 
-      // Should NOT show alert because null?.connectionError?.errors?.[0]?.status !== 403 and null?.connectedSystems !== 0 are both true
+      // Should NOT show alert because null?.connectionError and null?.connectedSystems do not block execution
       expect(screen.queryByTestId('alert')).not.toBeInTheDocument();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle different connectionError values', () => {
@@ -541,12 +653,16 @@ describe('DetailsGeneralContent', () => {
       const gridItems = screen.getAllByTestId('grid-item');
 
       // Check hierarchy
-      expect(gridItems).toHaveLength(2);
+      expect(gridItems).toHaveLength(3);
       expect(grid).toContainElement(gridItems[0]);
       expect(grid).toContainElement(gridItems[1]);
+      expect(grid).toContainElement(gridItems[2]);
       expect(gridItems[0]).toContainElement(screen.getByTestId('details-card'));
       expect(gridItems[1]).toContainElement(
         screen.getByTestId('progress-card'),
+      );
+      expect(gridItems[2]).toContainElement(
+        screen.getByTestId('activity-card'),
       );
     });
 
@@ -561,6 +677,11 @@ describe('DetailsGeneralContent', () => {
       // Second grid item should contain ProgressCard
       expect(gridItems[1]).toContainElement(
         screen.getByTestId('progress-card'),
+      );
+
+      // Third grid item should contain ActivityCard
+      expect(gridItems[2]).toContainElement(
+        screen.getByTestId('activity-card'),
       );
     });
   });
