@@ -11,10 +11,13 @@ import {
 import { EllipsisVIcon } from '@patternfly/react-icons';
 import RenameModal from './RenameModal';
 import ConfirmationDialog from './ConfirmationDialog';
+import RetentionPolicyModal from './RetentionPolicyModal';
+import RetentionPolicyDropdownItem from './RetentionPolicyDropdownItem';
 import { useAddNotification } from '@redhat-cloud-services/frontend-components-notifications/hooks';
 
 import { PermissionContext } from '../App';
 import useRemediations from '../Utilities/Hooks/api/useRemediations';
+import { useIsOrgAdmin } from '../Utilities/Hooks/useIsOrgAdmin';
 
 function RemediationDetailsDropdown({
   remediation,
@@ -25,7 +28,11 @@ function RemediationDetailsDropdown({
   const [open, setOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [retentionPolicyModalOpen, setRetentionPolicyModalOpen] =
+    useState(false);
   const permission = useContext(PermissionContext);
+  const { isOrgAdmin: canManageRetentionPolicy, isLoading: isOrgAdminLoading } =
+    useIsOrgAdmin();
   const navigate = useNavigate();
   const addNotification = useAddNotification();
 
@@ -79,7 +86,14 @@ function RemediationDetailsDropdown({
         }}
       />
 
-      {permission.permissions.write && (
+      {retentionPolicyModalOpen && (
+        <RetentionPolicyModal
+          isOpen={retentionPolicyModalOpen}
+          onClose={() => setRetentionPolicyModalOpen(false)}
+        />
+      )}
+
+      {(permission.permissions.write || canManageRetentionPolicy) && (
         <Dropdown
           onSelect={() => setOpen(false)}
           toggle={(toggleRef) => (
@@ -96,19 +110,28 @@ function RemediationDetailsDropdown({
           popperProps={{ position: 'right' }}
         >
           <DropdownList>
-            <DropdownItem
-              key="rename"
-              onClick={() => setRenameDialogOpen(true)}
-            >
-              Rename
-            </DropdownItem>
-            <DropdownItem
-              key="delete"
-              onClick={() => setDeleteDialogOpen(true)}
-              isDanger
-            >
-              Delete
-            </DropdownItem>
+            {permission.permissions.write && (
+              <DropdownItem
+                key="rename"
+                onClick={() => setRenameDialogOpen(true)}
+              >
+                Rename
+              </DropdownItem>
+            )}
+            <RetentionPolicyDropdownItem
+              canManageRetentionPolicy={canManageRetentionPolicy}
+              isLoading={isOrgAdminLoading}
+              onClick={() => setRetentionPolicyModalOpen(true)}
+            />
+            {permission.permissions.write && (
+              <DropdownItem
+                key="delete"
+                onClick={() => setDeleteDialogOpen(true)}
+                isDanger
+              >
+                Delete
+              </DropdownItem>
+            )}
           </DropdownList>
         </Dropdown>
       )}
