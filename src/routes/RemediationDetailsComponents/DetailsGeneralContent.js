@@ -14,7 +14,6 @@ import ActivityCard from './ActivityCard';
 
 const DetailsGeneralContent = ({
   details,
-  onRename,
   refetch,
   remediationStatus,
   updateRemPlan,
@@ -106,15 +105,11 @@ const DetailsGeneralContent = ({
         <GridItem span={12} md={6}>
           <DetailsCard
             details={details}
-            onRename={onRename}
             refetch={refetch}
-            remediationStatus={remediationStatus}
             updateRemPlan={updateRemPlan}
             onNavigateToTab={onNavigateToTab}
             allRemediations={allRemediations}
-            lastRemediationPlaybookRun={lastRemediationPlaybookRun}
             refetchAllRemediations={refetchAllRemediations}
-            isPlaybookRunsLoading={isPlaybookRunsLoading}
           />
         </GridItem>
         <GridItem span={12} md={6}>
@@ -142,7 +137,6 @@ const DetailsGeneralContent = ({
 
 DetailsGeneralContent.propTypes = {
   details: PropTypes.object.isRequired,
-  onRename: PropTypes.func.isRequired,
   refetch: PropTypes.func.isRequired,
   remediationStatus: PropTypes.object.isRequired,
   updateRemPlan: PropTypes.func,
@@ -151,7 +145,6 @@ DetailsGeneralContent.propTypes = {
   permissions: PropTypes.object,
   lastRemediationPlaybookRun: PropTypes.any,
   refetchAllRemediations: PropTypes.func,
-  detailsLoading: PropTypes.bool,
   isPlaybookRunsLoading: PropTypes.bool,
   actionPoints: PropTypes.number,
 };

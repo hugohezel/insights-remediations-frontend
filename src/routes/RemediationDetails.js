@@ -173,7 +173,6 @@ const RemediationDetails = () => {
               <DetailsGeneralContent
                 details={remediationDetailsSummary}
                 refetchAllRemediations={refetchAllRemediations}
-                onRename={setIsRenameModalOpen}
                 refetch={refetchRemediationDetails}
                 remediationStatus={remediationStatus}
                 updateRemPlan={updateRemPlan}
@@ -181,7 +180,6 @@ const RemediationDetails = () => {
                 allRemediations={allRemediationsData}
                 permissions={context.permissions}
                 lastRemediationPlaybookRun={remediationPlaybookRuns?.data[0]}
-                detailsLoading={detailsLoading}
                 isPlaybookRunsLoading={isPlaybookRunsLoading}
                 actionPoints={actionPoints}
               />

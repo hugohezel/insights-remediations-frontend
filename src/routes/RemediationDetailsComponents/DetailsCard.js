@@ -420,7 +420,7 @@ DetailsCard.propTypes = {
     updated_at: PropTypes.string.isRequired,
     issue_count: PropTypes.number.isRequired,
     system_count: PropTypes.number.isRequired,
-  }).isRequired,
+  }),
   onNavigateToTab: PropTypes.func,
   allRemediations: PropTypes.array,
   updateRemPlan: PropTypes.func,

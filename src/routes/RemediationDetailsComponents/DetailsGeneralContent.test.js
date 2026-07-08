@@ -108,7 +108,6 @@ describe('DetailsGeneralContent', () => {
 
   const defaultProps = {
     details: createDetails(),
-    onRename: jest.fn(),
     refetch: jest.fn(),
     remediationStatus: {
       connectionError: null,
@@ -423,19 +422,13 @@ describe('DetailsGeneralContent', () => {
         screen.getByTestId('details-card-props').textContent,
       );
 
-      // Functions won't appear in JSON, so we can only check non-function props
-      expect(detailsCardProps.remediationStatus).toEqual(
-        defaultProps.remediationStatus,
-      );
+      expect(detailsCardProps.details).toEqual(defaultProps.details);
       expect(detailsCardProps.allRemediations).toEqual(
         defaultProps.allRemediations,
       );
-      expect(detailsCardProps.lastRemediationPlaybookRun).toEqual(
-        defaultProps.lastRemediationPlaybookRun,
-      );
-      expect(detailsCardProps.isPlaybookRunsLoading).toBe(
-        defaultProps.isPlaybookRunsLoading,
-      );
+      expect(detailsCardProps).not.toHaveProperty('remediationStatus');
+      expect(detailsCardProps).not.toHaveProperty('lastRemediationPlaybookRun');
+      expect(detailsCardProps).not.toHaveProperty('isPlaybookRunsLoading');
 
       // Check that DetailsCard component is rendered (functions are passed but not visible in JSON)
       expect(screen.getByTestId('details-card')).toBeInTheDocument();
@@ -478,7 +471,6 @@ describe('DetailsGeneralContent', () => {
     it('should handle missing optional props', () => {
       const minimalProps = {
         details: createDetails(),
-        onRename: jest.fn(),
         refetch: jest.fn(),
         remediationStatus: {
           connectionError: null,
@@ -495,11 +487,10 @@ describe('DetailsGeneralContent', () => {
       const detailsCardProps = JSON.parse(
         screen.getByTestId('details-card-props').textContent,
       );
-      expect(detailsCardProps.updateRemPlan).toBeUndefined();
-      expect(detailsCardProps.onNavigateToTab).toBeUndefined();
       expect(detailsCardProps.allRemediations).toBeUndefined();
-      expect(detailsCardProps.lastRemediationPlaybookRun).toBeUndefined();
-      expect(detailsCardProps.refetchAllRemediations).toBeUndefined();
+      expect(detailsCardProps).not.toHaveProperty('remediationStatus');
+      expect(detailsCardProps).not.toHaveProperty('lastRemediationPlaybookRun');
+      expect(detailsCardProps).not.toHaveProperty('isPlaybookRunsLoading');
 
       const activityCardProps = JSON.parse(
         screen.getByTestId('activity-card-props').textContent,
@@ -520,9 +511,7 @@ describe('DetailsGeneralContent', () => {
       const detailsCardProps = JSON.parse(
         screen.getByTestId('details-card-props').textContent,
       );
-      expect(detailsCardProps.remediationStatus).toEqual(
-        defaultProps.remediationStatus,
-      );
+      expect(detailsCardProps.details).toEqual(defaultProps.details);
     });
   });
 
