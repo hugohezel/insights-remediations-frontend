@@ -10,6 +10,7 @@ import {
   SystemsCell,
   CreatedCell,
   LastModifiedCell,
+  ExpirationCell,
 } from './Cells';
 
 jest.mock('@redhat-cloud-services/frontend-components/InsightsLink', () => {
@@ -398,6 +399,85 @@ describe('routes/Cells', () => {
     });
   });
 
+  describe('ExpirationCell component', () => {
+    it('should display remaining days for expirations within a month', () => {
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      render(<ExpirationCell expires_at={expiresAt.toISOString()} />);
+
+      expect(screen.getByText('7 days')).toBeInTheDocument();
+    });
+
+    it('should display warning icon when expiration is within warning period', () => {
+      const expiresAt = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
+
+      render(
+        <ExpirationCell
+          expires_at={expiresAt.toISOString()}
+          plan_warning_days={7}
+        />,
+      );
+
+      expect(screen.getByLabelText('Expiration warning')).toBeInTheDocument();
+    });
+
+    it('should not display warning icon when expiration is outside warning period', () => {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+      render(
+        <ExpirationCell
+          expires_at={expiresAt.toISOString()}
+          plan_warning_days={7}
+        />,
+      );
+
+      expect(
+        screen.queryByLabelText('Expiration warning'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('should display remaining months for longer expirations', () => {
+      const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+
+      render(<ExpirationCell expires_at={expiresAt.toISOString()} />);
+
+      expect(screen.getByText('3 months')).toBeInTheDocument();
+    });
+
+    it('should display expired when the remediation has already expired', () => {
+      const expiresAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      render(<ExpirationCell expires_at={expiresAt.toISOString()} />);
+
+      expect(screen.getByText('Expired')).toBeInTheDocument();
+    });
+
+    it('should display warning icon when the remediation has expired', () => {
+      const expiresAt = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      render(
+        <ExpirationCell
+          expires_at={expiresAt.toISOString()}
+          plan_warning_days={7}
+        />,
+      );
+
+      expect(screen.getByLabelText('Expiration warning')).toBeInTheDocument();
+    });
+
+    it('should display N/A for missing expiration date', () => {
+      render(<ExpirationCell expires_at={undefined} />);
+
+      expect(screen.getByText('N/A')).toBeInTheDocument();
+    });
+
+    it('should display N/A for invalid expiration date', () => {
+      render(<ExpirationCell expires_at="invalid-date" />);
+
+      expect(screen.getByText('N/A')).toBeInTheDocument();
+    });
+  });
+
   describe('Component integration', () => {
     it('should render all components together without conflicts', () => {
       const playbook_runs = [
@@ -413,6 +493,12 @@ describe('routes/Cells', () => {
           <SystemsCell system_count={10} />
           <CreatedCell created_at="2023-03-10T10:30:00Z" />
           <LastModifiedCell updated_at="2023-03-15T10:30:00Z" />
+          <ExpirationCell
+            expires_at={new Date(
+              Date.now() + 7 * 24 * 60 * 60 * 1000,
+            ).toISOString()}
+            plan_warning_days={14}
+          />
         </div>,
       );
 
@@ -423,6 +509,7 @@ describe('routes/Cells', () => {
       expect(screen.getByText('5')).toBeInTheDocument();
       expect(screen.getByText('10')).toBeInTheDocument();
       expect(screen.getByText('2 hours ago')).toBeInTheDocument();
+      expect(screen.getByText('7 days')).toBeInTheDocument();
     });
   });
 

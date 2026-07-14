@@ -5,8 +5,12 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
   calculateExpiresInDays,
+  getExpiresInDays,
   getStatusMeta,
+  parseExpiresAt,
+  shouldShowExpirationWarning,
   StatusLabel,
+  textualizeExpiresInDays,
   getStatusText,
   getStatusColor,
   renderConnectionStatus,
@@ -312,6 +316,75 @@ describe('routes/helpers', () => {
         expect(getStatusColor('canceled')).toBe('red');
         expect(getStatusColor('unknown')).toBeNull();
       }
+    });
+  });
+
+  describe('expiration helpers', () => {
+    it('should parse a valid expiration date', () => {
+      const result = parseExpiresAt('2026-07-20T12:00:00Z');
+
+      expect(result).toEqual(new Date('2026-07-20T12:00:00Z'));
+    });
+
+    it('should return null for invalid expiration date', () => {
+      expect(parseExpiresAt('not-a-date')).toBeNull();
+      expect(parseExpiresAt(undefined)).toBeNull();
+      expect(parseExpiresAt(null)).toBeNull();
+    });
+
+    it('should round future expiration up to the next day', () => {
+      const now = Date.now();
+      const result = calculateExpiresInDays(
+        new Date(now + 1.5 * 24 * 60 * 60 * 1000),
+      );
+
+      expect(result).toBe(2);
+    });
+
+    it('should round past expiration down to keep it expired', () => {
+      const now = Date.now();
+      const result = calculateExpiresInDays(
+        new Date(now - 0.5 * 24 * 60 * 60 * 1000),
+      );
+
+      expect(result).toBe(-1);
+    });
+
+    it('should return expires in days for a valid expiration string', () => {
+      const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+
+      expect(getExpiresInDays(futureDate.toISOString())).toBe(10);
+    });
+
+    it('should return null for invalid expiration strings', () => {
+      expect(getExpiresInDays('invalid')).toBeNull();
+      expect(getExpiresInDays('')).toBeNull();
+    });
+
+    it('should textualize days below 30 days', () => {
+      expect(textualizeExpiresInDays(7)).toBe('7 days');
+      expect(textualizeExpiresInDays(1)).toBe('1 day');
+    });
+
+    it('should textualize longer windows as months', () => {
+      expect(textualizeExpiresInDays(30)).toBe('1 month');
+      expect(textualizeExpiresInDays(90)).toBe('3 months');
+      expect(textualizeExpiresInDays(180)).toBe('6 months');
+    });
+
+    it('should return true when expiration is within warning period', () => {
+      expect(shouldShowExpirationWarning(6, 7)).toBe(true);
+      expect(shouldShowExpirationWarning(7, 7)).toBe(true);
+    });
+
+    it('should return true when the plan has already expired', () => {
+      expect(shouldShowExpirationWarning(-1, 7)).toBe(true);
+      expect(shouldShowExpirationWarning(-30, 7)).toBe(true);
+    });
+
+    it('should return false when expiration is outside warning period', () => {
+      expect(shouldShowExpirationWarning(8, 7)).toBe(false);
+      expect(shouldShowExpirationWarning(6, undefined)).toBe(false);
     });
   });
 

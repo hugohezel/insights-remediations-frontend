@@ -60,12 +60,42 @@ export const calculateExpiresInDays = (expiresAtDate) => {
     : Math.ceil(daysUntilExpiration);
 };
 
+export const parseExpiresAt = (expiresAt) => {
+  if (!expiresAt) {
+    return null;
+  }
+
+  const expiresAtDate = new Date(expiresAt);
+  return isNaN(expiresAtDate.getTime()) ? null : expiresAtDate;
+};
+
+export const getExpiresInDays = (expiresAt) => {
+  const expiresAtDate = parseExpiresAt(expiresAt);
+  return expiresAtDate ? calculateExpiresInDays(expiresAtDate) : null;
+};
+
 export const textualizeExpiresInDays = (expiresInDays) => {
   if (expiresInDays < 30) {
     return pluralize(expiresInDays, 'day');
   }
 
   return pluralize(Math.floor(expiresInDays / 30), 'month');
+};
+
+export const shouldShowExpirationWarning = (expiresInDays, warningDays) => {
+  const normalizedWarningDays = Number(warningDays);
+
+  if (!Number.isFinite(expiresInDays)) {
+    return false;
+  }
+
+  if (expiresInDays < 0) {
+    return true;
+  }
+
+  return Number.isFinite(normalizedWarningDays)
+    ? expiresInDays <= normalizedWarningDays
+    : false;
 };
 
 export const StatusLabel = ({ status = '' }) => {
