@@ -72,3 +72,19 @@ export const CreatedByFilter = [
     filterAttribute: 'created_after',
   },
 ];
+
+const EXPIRATION_FILTER_ITEMS = [
+  { label: 'Within 7 days', value: '7' },
+  { label: 'Within 30 days', value: '30' },
+  { label: 'Within 3 months', value: '90' },
+  { label: 'Within 6 months', value: '180' },
+];
+
+export const ExpirationFilter = [
+  {
+    type: conditionalFilterType.singleSelect,
+    label: 'Expiration',
+    filterAttribute: 'expires_within',
+    items: EXPIRATION_FILTER_ITEMS,
+  },
+];

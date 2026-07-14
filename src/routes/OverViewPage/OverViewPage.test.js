@@ -27,6 +27,12 @@ const demoRows = [
   },
 ];
 
+const mockOrgConfig = {
+  plan_retention_days: 120,
+  plan_warning_days: 7,
+};
+const mockGetOrgConfig = jest.fn(() => Promise.resolve(mockOrgConfig));
+
 jest.mock('../../Utilities/Hooks/useFeatureFlag', () => ({
   useFeatureFlag: jest.fn(),
 }));
@@ -56,6 +62,7 @@ jest.mock('../api', () => ({
     Promise.resolve({ data: demoRows, meta: { total: 2 } }),
   ),
   getRemediationsList: jest.fn(() => Promise.resolve({ data: demoRows })),
+  getOrgConfig: mockGetOrgConfig,
   deleteRemediation: jest.fn(() => Promise.resolve({})),
   deleteRemediationList: jest.fn(() => Promise.resolve({})),
 }));
@@ -87,6 +94,13 @@ jest.mock('../../Utilities/Hooks/api/useRemediations', () => ({
         fetchAllIds: jest
           .fn()
           .mockResolvedValue(currentData.data.map((r) => r.id)),
+      };
+    }
+    if (endpoint === mockGetOrgConfig) {
+      return {
+        result: mockOrgConfig,
+        loading: false,
+        refetch: jest.fn(),
       };
     }
     if (endpoint === 'deleteRemediations') {
@@ -315,6 +329,13 @@ const renderPageWithList = (list, customStore) => {
           .mockResolvedValue(mockRemediationsData.data.map((r) => r.id)),
       };
     }
+    if (endpoint === mockGetOrgConfig) {
+      return {
+        result: mockOrgConfig,
+        loading: false,
+        refetch: jest.fn(),
+      };
+    }
     if (endpoint === 'deleteRemediations') {
       return {
         fetchBatched: jest.fn().mockResolvedValue({}),
@@ -384,6 +405,13 @@ describe('OverViewPage', () => {
             .mockResolvedValue(mockRemediationsData.data.map((r) => r.id)),
         };
       }
+      if (endpoint === mockGetOrgConfig) {
+        return {
+          result: mockOrgConfig,
+          loading: false,
+          refetch: jest.fn(),
+        };
+      }
       if (endpoint === 'deleteRemediations') {
         return {
           fetchBatched: jest.fn().mockResolvedValue({}),
@@ -410,6 +438,8 @@ describe('OverViewPage', () => {
     getRemediationsList.mockImplementation(() =>
       Promise.resolve({ data: [...demoRows] }),
     );
+    mockGetOrgConfig.mockReset();
+    mockGetOrgConfig.mockImplementation(() => Promise.resolve(mockOrgConfig));
 
     // Reset download mock
     download.mockReset();
@@ -515,6 +545,15 @@ describe('OverViewPage', () => {
     );
 
     expect(modal).toBeVisible();
+  });
+
+  it('renders the Expiration column in the overview table', async () => {
+    const view = renderPage(store);
+    cleanup = view.unmount;
+
+    expect(
+      await screen.findByRole('columnheader', { name: /expiration/i }),
+    ).toBeInTheDocument();
   });
 
   it('calls download helper for single row', async () => {

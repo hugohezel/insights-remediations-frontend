@@ -5,6 +5,7 @@ import RemediationsTable from '../../components/RemediationsTable/RemediationsTa
 import {
   CreatedByFilter,
   ExecutionStatusFilter,
+  ExpirationFilter,
   LastExecutedFilter,
   LastModifiedFilter,
   remediationNameFilter,
@@ -28,6 +29,7 @@ import useRemediationFetchExtras from '../../api/useRemediationFetchExtras';
 import { OverViewPageHeader } from './OverViewPageHeader';
 import { PermissionContext } from '../../App';
 import chunk from 'lodash/chunk';
+import { getOrgConfig } from '../api';
 
 import TableEmptyState from './TableEmptyState';
 import { CalendarFilterType } from './CalendarFilterType';
@@ -60,6 +62,7 @@ export const OverViewPage = () => {
     useRemediations('getRemediations', {
       params: { fieldsData: ['name'] },
     });
+  const { result: orgConfig } = useRemediations(getOrgConfig);
 
   const { fetch: deleteRem } = useRemediations('deleteRemediation', {
     skip: true,
@@ -106,6 +109,16 @@ export const OverViewPage = () => {
       },
     ];
   }, [currentlySelected, handleBulkDeleteClick]);
+
+  const items = useMemo(
+    () =>
+      result?.data?.map((item) => ({
+        ...item,
+        plan_warning_days: orgConfig?.plan_warning_days,
+      })),
+    [orgConfig?.plan_warning_days, result?.data],
+  );
+
   const handleSingleDeleteClick = async (id) => {
     return deleteRem({ id });
   };
@@ -178,7 +191,7 @@ export const OverViewPage = () => {
               aria-label="OverViewTable"
               ouiaId="OverViewTable"
               loading={loading}
-              items={result?.data}
+              items={items}
               total={result?.meta?.total}
               columns={[...columns]}
               filters={{
@@ -188,6 +201,7 @@ export const OverViewPage = () => {
                   ...ExecutionStatusFilter,
                   ...LastModifiedFilter,
                   ...CreatedByFilter,
+                  ...ExpirationFilter,
                 ],
                 customFilterTypes: {
                   calendar: CalendarFilterType,

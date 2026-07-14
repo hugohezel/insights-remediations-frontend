@@ -84,6 +84,11 @@ describe('serealisers', () => {
         filterAttribute: 'custom_field',
         filterSerialiser: (config, values) => values.join('|'),
       },
+      {
+        id: 'expires_within',
+        type: 'singleSelect',
+        filterAttribute: 'expires_within',
+      },
     ];
 
     it('should serialize text filter', () => {
@@ -181,6 +186,17 @@ describe('serealisers', () => {
       expect(result).toEqual({
         filter: {
           custom_field: 'value1|value2',
+        },
+      });
+    });
+
+    it('should serialize expires_within as a plain singleSelect filter', () => {
+      const state = { expires_within: ['30'] };
+      const result = filtersSerialiser(state, mockFilters);
+
+      expect(result).toEqual({
+        filter: {
+          expires_within: '30',
         },
       });
     });
