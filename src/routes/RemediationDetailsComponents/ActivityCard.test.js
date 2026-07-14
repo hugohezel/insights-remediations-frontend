@@ -75,7 +75,7 @@ describe('ActivityCard', () => {
       expect(
         screen.getByRole('heading', { name: 'Activity' }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(screen.getAllByRole('progressbar')).toHaveLength(2);
       expect(
         screen.getByText(formatDate(createDetails().created_at)),
       ).toBeInTheDocument();

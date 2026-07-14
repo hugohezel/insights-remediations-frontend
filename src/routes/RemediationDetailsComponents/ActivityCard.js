@@ -240,11 +240,17 @@ const ActivityCard = ({
               {formatDate(details?.updated_at)}
             </DescriptionListDescription>
           </DescriptionListGroup>
-          {/* Last Execution */}
+          {/* Last Executed */}
           <DescriptionListGroup>
-            <DescriptionListTerm>Last execution</DescriptionListTerm>
+            <DescriptionListTerm>Last executed</DescriptionListTerm>
             <DescriptionListDescription>
-              {updatedAtDate ? formatDate(updatedAtDate) : 'Never'}
+              {isPlaybookRunsLoading ? (
+                <Spinner size="md" />
+              ) : updatedAtDate ? (
+                formatDate(updatedAtDate)
+              ) : (
+                'Never'
+              )}
             </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>
