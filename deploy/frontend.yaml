@@ -64,21 +64,17 @@ objects:
             - automation
             - tasks
             - ansible remediations
-      bundleSegments:
-        - segmentId: automation
-          bundleId: insights
-          position: 2200
+      navigationSegments:
+        - segmentId: remediations-nav
           navItems:
             - id: remediations
-              title: Automation Toolkit
-              expandable: true
-              routes:
-                - id: remediations
-                  title: Remediation Plans
-                  href: /insights/remediations
-                  icon: InsightsIcon
-                  product: Red Hat Insights
-        - segmentId: remediations
+              title: Remediation Plans
+              href: /insights/remediations
+              icon: InsightsIcon
+              product: Red Hat Insights
+
+      bundleSegments:
+        - segmentId: remediations-ansible
           bundleId: ansible
           position: 2300
           navItems:
