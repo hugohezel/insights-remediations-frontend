@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useMemo } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import useRemediations from '../Utilities/Hooks/api/useRemediations';
 import { updateRemediationWrapper } from './api';
@@ -19,6 +25,8 @@ const RemediationDetails = () => {
   const { id } = useParams();
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [retentionPolicyRefreshNonce, setRetentionPolicyRefreshNonce] =
+    useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showPlanNotFound, setShowPlanNotFound] = useState(false);
   const { isFedramp } = chrome;
@@ -58,6 +66,11 @@ const RemediationDetails = () => {
   const { fetch: updateRemPlan } = useRemediations(updateRemediationWrapper, {
     skip: true,
   });
+
+  const handleRetentionPolicyUpdated = useCallback(() => {
+    refetchRemediationDetails();
+    setRetentionPolicyRefreshNonce((currentNonce) => currentNonce + 1);
+  }, [refetchRemediationDetails]);
 
   useEffect(() => {
     remediationDetailsSummary &&
@@ -149,6 +162,7 @@ const RemediationDetails = () => {
             remediationPlaybookRuns={remediationPlaybookRuns}
             isPlaybookRunsLoading={isPlaybookRunsLoading}
             actionPoints={actionPoints}
+            onRetentionPolicyUpdated={handleRetentionPolicyUpdated}
           />
           <Tabs
             activeKey={searchParams.get('activeTab') || 'general'}
@@ -173,16 +187,15 @@ const RemediationDetails = () => {
               <DetailsGeneralContent
                 details={remediationDetailsSummary}
                 refetchAllRemediations={refetchAllRemediations}
-                onRename={setIsRenameModalOpen}
                 refetch={refetchRemediationDetails}
                 remediationStatus={remediationStatus}
                 updateRemPlan={updateRemPlan}
                 onNavigateToTab={handleTabClick}
                 allRemediations={allRemediationsData}
                 permissions={context.permissions}
-                remediationPlaybookRuns={remediationPlaybookRuns?.data[0]}
-                detailsLoading={detailsLoading}
+                lastRemediationPlaybookRun={remediationPlaybookRuns?.data[0]}
                 isPlaybookRunsLoading={isPlaybookRunsLoading}
+                retentionPolicyRefreshNonce={retentionPolicyRefreshNonce}
                 actionPoints={actionPoints}
               />
             </Tab>

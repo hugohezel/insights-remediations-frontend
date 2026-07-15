@@ -10,19 +10,20 @@ import { calculateActionPointsFromSummary } from '../../components/helpers';
 import { calculateExecutionLimits } from './helpers';
 import DetailsCard from './DetailsCard';
 import ProgressCard from './ProgressCard';
+import ActivityCard from './ActivityCard';
 
 const DetailsGeneralContent = ({
   details,
-  onRename,
   refetch,
   remediationStatus,
   updateRemPlan,
   onNavigateToTab,
   allRemediations,
   permissions,
-  remediationPlaybookRuns,
+  lastRemediationPlaybookRun,
   refetchAllRemediations,
   isPlaybookRunsLoading,
+  retentionPolicyRefreshNonce,
   actionPoints: actionPointsProp,
 }) => {
   const actionPointsComputed = useMemo(() => {
@@ -105,15 +106,11 @@ const DetailsGeneralContent = ({
         <GridItem span={12} md={6}>
           <DetailsCard
             details={details}
-            onRename={onRename}
             refetch={refetch}
-            remediationStatus={remediationStatus}
             updateRemPlan={updateRemPlan}
             onNavigateToTab={onNavigateToTab}
             allRemediations={allRemediations}
-            remediationPlaybookRuns={remediationPlaybookRuns}
             refetchAllRemediations={refetchAllRemediations}
-            isPlaybookRunsLoading={isPlaybookRunsLoading}
           />
         </GridItem>
         <GridItem span={12} md={6}>
@@ -126,6 +123,15 @@ const DetailsGeneralContent = ({
             actionPoints={actionPoints}
           />
         </GridItem>
+        <GridItem span={12} md={6}>
+          <ActivityCard
+            details={details}
+            lastRemediationPlaybookRun={lastRemediationPlaybookRun}
+            isPlaybookRunsLoading={isPlaybookRunsLoading}
+            onNavigateToTab={onNavigateToTab}
+            retentionPolicyRefreshNonce={retentionPolicyRefreshNonce}
+          />
+        </GridItem>
       </Grid>
     </section>
   );
@@ -133,17 +139,16 @@ const DetailsGeneralContent = ({
 
 DetailsGeneralContent.propTypes = {
   details: PropTypes.object.isRequired,
-  onRename: PropTypes.func.isRequired,
   refetch: PropTypes.func.isRequired,
   remediationStatus: PropTypes.object.isRequired,
   updateRemPlan: PropTypes.func,
   onNavigateToTab: PropTypes.func,
   allRemediations: PropTypes.array,
   permissions: PropTypes.object,
-  remediationPlaybookRuns: PropTypes.any,
+  lastRemediationPlaybookRun: PropTypes.any,
   refetchAllRemediations: PropTypes.func,
-  detailsLoading: PropTypes.bool,
   isPlaybookRunsLoading: PropTypes.bool,
+  retentionPolicyRefreshNonce: PropTypes.number,
   actionPoints: PropTypes.number,
 };
 

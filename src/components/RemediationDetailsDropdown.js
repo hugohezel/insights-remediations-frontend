@@ -24,6 +24,7 @@ function RemediationDetailsDropdown({
   remediationsList,
   refetchRemediationDetails,
   refetchAllRemediations,
+  onRetentionPolicyUpdated,
 }) {
   const [open, setOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -90,6 +91,7 @@ function RemediationDetailsDropdown({
         <RetentionPolicyModal
           isOpen={retentionPolicyModalOpen}
           onClose={() => setRetentionPolicyModalOpen(false)}
+          onRetentionPolicyUpdated={onRetentionPolicyUpdated}
         />
       )}
 
@@ -144,6 +146,7 @@ RemediationDetailsDropdown.propTypes = {
   remediationsList: PropTypes.array,
   refetchRemediationDetails: PropTypes.func,
   refetchAllRemediations: PropTypes.func,
+  onRetentionPolicyUpdated: PropTypes.func,
 };
 
 export default RemediationDetailsDropdown;

@@ -51,7 +51,7 @@ const remediationStatus = {
   areDetailsLoading: false,
   connectionError: null,
 };
-const allRemediations = { data: [] };
+const allRemediations = [];
 const permissions = { execute: true };
 const updateRemPlan = jest.fn();
 const refetch = jest.fn();

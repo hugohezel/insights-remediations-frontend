@@ -5,6 +5,14 @@ import {
 } from '@patternfly/react-icons';
 import React from 'react';
 
+export const toValidDate = (value) => {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export const execStatus = (status, date) => {
   let icon;
   let displayValue = 'N/A';

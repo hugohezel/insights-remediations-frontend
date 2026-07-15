@@ -1,53 +1,52 @@
 /* eslint-disable react/prop-types */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import DetailsCard from './DetailsCard';
 import * as useVerifyName from '../../Utilities/useVerifyName';
-import * as formatDate from '../Cells';
-import * as helpers from './helpers';
+import useRemediations from '../../Utilities/Hooks/api/useRemediations';
+import { useAddNotification } from '@redhat-cloud-services/frontend-components-notifications/hooks';
 
 jest.mock('../../Utilities/useVerifyName');
-jest.mock('../Cells', () => ({
-  formatDate: jest.fn(),
-}));
-jest.mock('./helpers', () => ({
-  execStatus: jest.fn(),
-}));
-
-jest.mock('../../Utilities/Hooks/useFeatureFlag', () => ({
-  useFeatureFlag: jest.fn(),
-}));
+jest.mock('../../Utilities/Hooks/api/useRemediations');
+jest.mock(
+  '@redhat-cloud-services/frontend-components-notifications/hooks',
+  () => ({
+    useAddNotification: jest.fn(),
+  }),
+);
 jest.mock('@redhat-cloud-services/frontend-components/InsightsLink', () => {
-  return function MockInsightsLink({ to, target, children }) {
+  return function MockInsightsLink({ to, target, children, ...props }) {
     return (
-      <a href={to} target={target} data-testid="insights-link">
+      <a href={to} target={target} {...props}>
         {children}
       </a>
     );
   };
 });
 
-const { useFeatureFlag } = require('../../Utilities/Hooks/useFeatureFlag');
-
 describe('DetailsCard', () => {
   let mockUpdateRemPlan;
   let mockOnNavigateToTab;
-
-  beforeEach(() => {
-    // Default to feature flag disabled
-    useFeatureFlag.mockReturnValue(false);
-    jest.clearAllMocks();
-  });
   let mockRefetch;
   let mockRefetchAllRemediations;
+  let mockFetchRemediationIssues;
   let mockUseVerifyName;
+  let mockAddNotification;
+
+  const learnMoreUrl =
+    'https://docs.redhat.com/en/documentation/red_hat_lightspeed/1-latest/html-single/red_hat_lightspeed_remediations_guide/index#creating-remediation-plans_red-hat-lightspeed-remediation-guide';
 
   const mockDetails = {
     id: 'remediation-123',
     name: 'Test Remediation Plan',
-    needs_reboot: false,
     auto_reboot: true,
     archived: false,
     created_by: {
@@ -62,59 +61,8 @@ describe('DetailsCard', () => {
       last_name: 'User',
     },
     updated_at: '2024-01-20T15:45:00Z',
-    resolved_count: 5,
     issue_count: 2,
     system_count: 10,
-    issues: [
-      {
-        id: 'issue-1',
-        description: 'Fix security issue',
-        resolution: {
-          id: 'res-1',
-          description: 'Apply security patch',
-          resolution_risk: 2,
-          needs_reboot: false,
-        },
-        resolutions_available: 1,
-        systems: [
-          {
-            id: 'sys-1',
-            hostname: 'server1.example.com',
-            display_name: 'Server 1',
-            resolved: false,
-          },
-        ],
-      },
-      {
-        id: 'issue-2',
-        description: 'Update packages',
-        resolution: {
-          id: 'res-2',
-          description: 'Update system packages',
-          resolution_risk: 1,
-          needs_reboot: true,
-        },
-        resolutions_available: 2,
-        systems: [
-          {
-            id: 'sys-2',
-            hostname: 'server2.example.com',
-            display_name: 'Server 2',
-            resolved: true,
-          },
-        ],
-      },
-    ],
-    autoreboot: true,
-  };
-
-  const mockRemediationStatus = {
-    totalSystems: 10,
-  };
-
-  const mockRemediationPlaybookRuns = {
-    status: 'success',
-    updated_at: '2024-01-20T16:00:00Z',
   };
 
   const mockAllRemediations = [
@@ -123,46 +71,38 @@ describe('DetailsCard', () => {
   ];
 
   beforeEach(() => {
-    mockUpdateRemPlan = jest.fn().mockResolvedValue();
-    mockOnNavigateToTab = jest.fn();
-    mockRefetch = jest.fn().mockResolvedValue();
-    mockRefetchAllRemediations = jest.fn().mockResolvedValue();
+    jest.clearAllMocks();
 
-    mockUseVerifyName = jest.fn().mockReturnValue([false, false]); // [isVerifying, isDuplicate]
+    mockUpdateRemPlan = jest.fn().mockResolvedValue(undefined);
+    mockOnNavigateToTab = jest.fn();
+    mockRefetch = jest.fn().mockResolvedValue(undefined);
+    mockRefetchAllRemediations = jest.fn().mockResolvedValue(undefined);
+    mockFetchRemediationIssues = jest
+      .fn()
+      .mockResolvedValue({ data: [], meta: { total: 0 } });
+    mockAddNotification = jest.fn();
+
+    mockUseVerifyName = jest.fn().mockReturnValue([false, false]);
     useVerifyName.useVerifyName.mockImplementation(mockUseVerifyName);
 
-    formatDate.formatDate.mockImplementation((dateStr) => {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+    useRemediations.mockReturnValue({
+      fetch: mockFetchRemediationIssues,
     });
-
-    helpers.execStatus.mockReturnValue(
-      <div data-testid="exec-status">Succeeded 5 hours ago</div>,
-    );
+    useAddNotification.mockReturnValue(mockAddNotification);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   const renderComponent = (props = {}) => {
     const defaultProps = {
       details: mockDetails,
-      remediationStatus: mockRemediationStatus,
       updateRemPlan: mockUpdateRemPlan,
       onNavigateToTab: mockOnNavigateToTab,
-      allRemediations: mockAllRemediations, // Now an array as component expects
+      allRemediations: mockAllRemediations,
       refetch: mockRefetch,
-      remediationPlaybookRuns: mockRemediationPlaybookRuns,
       refetchAllRemediations: mockRefetchAllRemediations,
-      // Add missing required props to fix PropType warnings
-      onRename: jest.fn(),
-      onToggleAutoreboot: jest.fn(),
-      onViewActions: jest.fn(),
       ...props,
     };
 
@@ -172,11 +112,13 @@ describe('DetailsCard', () => {
   describe('Component Rendering', () => {
     it('renders without crashing', () => {
       renderComponent();
+
       expect(screen.getByText('Details')).toBeInTheDocument();
     });
 
     it('displays loading spinner when no details provided', () => {
       renderComponent({ details: null });
+
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
       expect(screen.queryByText('Details')).not.toBeInTheDocument();
     });
@@ -186,9 +128,6 @@ describe('DetailsCard', () => {
 
       expect(screen.getByText('Test Remediation Plan')).toBeInTheDocument();
       expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Created')).toBeInTheDocument();
-      expect(screen.getByText('Last modified')).toBeInTheDocument();
-      expect(screen.getByText('Latest execution status')).toBeInTheDocument();
       expect(screen.getByText('Actions')).toBeInTheDocument();
       expect(screen.getByText('Systems')).toBeInTheDocument();
       expect(screen.getByText(/Auto-reboot/)).toBeInTheDocument();
@@ -206,89 +145,135 @@ describe('DetailsCard', () => {
         ...mockDetails,
         issue_count: 1,
         system_count: 1,
-        issues: [mockDetails.issues[0]],
       };
-      const singleStatus = { totalSystems: 1 };
 
-      renderComponent({
-        details: singleDetails,
-        remediationStatus: singleStatus,
-      });
+      renderComponent({ details: singleDetails });
 
       expect(screen.getByText('1 action')).toBeInTheDocument();
       expect(screen.getByText('1 system')).toBeInTheDocument();
     });
+  });
 
-    it('calls formatDate for created and updated dates', () => {
+  describe('Resolution Availability', () => {
+    it('shows an alert when a resolution option is available', async () => {
+      mockFetchRemediationIssues.mockResolvedValueOnce({
+        data: [{ id: 'issue-1', resolutions_available: 2 }],
+        meta: { total: 1 },
+      });
+
       renderComponent();
 
-      expect(formatDate.formatDate).toHaveBeenCalledWith(
-        '2024-01-15T10:30:00Z',
-      );
-      expect(formatDate.formatDate).toHaveBeenCalledWith(
-        '2024-01-20T15:45:00Z',
-      );
+      expect(
+        await screen.findByText('Resolution options are available.'),
+      ).toBeInTheDocument();
+      expect(mockFetchRemediationIssues).toHaveBeenCalledWith({
+        id: 'remediation-123',
+        limit: 50,
+        offset: 0,
+      });
     });
 
-    it('calls execStatus with correct parameters', () => {
+    it('checks additional pages until it finds a resolution option', async () => {
+      mockFetchRemediationIssues
+        .mockResolvedValueOnce({
+          data: Array.from({ length: 50 }, (_, index) => ({
+            id: `issue-${index}`,
+            resolutions_available: 1,
+          })),
+          meta: { total: 51 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 'issue-51', resolutions_available: 2 }],
+          meta: { total: 51 },
+        });
+
       renderComponent();
 
-      expect(helpers.execStatus).toHaveBeenCalledWith(
-        'success',
-        new Date('2024-01-20T16:00:00Z'),
+      expect(
+        await screen.findByText('Resolution options are available.'),
+      ).toBeInTheDocument();
+      expect(mockFetchRemediationIssues).toHaveBeenNthCalledWith(1, {
+        id: 'remediation-123',
+        limit: 50,
+        offset: 0,
+      });
+      expect(mockFetchRemediationIssues).toHaveBeenNthCalledWith(2, {
+        id: 'remediation-123',
+        limit: 50,
+        offset: 50,
+      });
+    });
+
+    it('removes the checking skeleton when no resolution options exist', async () => {
+      mockFetchRemediationIssues
+        .mockResolvedValueOnce({
+          data: [{ id: 'issue-1', resolutions_available: 1 }],
+          meta: { total: 2 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: 'issue-2', resolutions_available: 1 }],
+          meta: { total: 2 },
+        });
+
+      renderComponent();
+
+      const checkingState = await screen.findByText(
+        'Checking for resolution options',
       );
+      await waitForElementToBeRemoved(checkingState);
+
+      expect(
+        screen.queryByText('Resolution options are available.'),
+      ).not.toBeInTheDocument();
     });
   });
 
   describe('Name Editing', () => {
-    it('toggles edit mode when pencil icon is clicked', () => {
+    it('toggles edit mode when pencil icon is clicked', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      // The edit button is the first button (with no accessible name) - it contains the pencil icon
-      const buttons = screen.getAllByRole('button');
-      const editButton = buttons[0]; // First button is the edit button
       expect(
         screen.queryByDisplayValue('Test Remediation Plan'),
       ).not.toBeInTheDocument();
 
-      fireEvent.click(editButton);
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
+
       expect(
         screen.getByDisplayValue('Test Remediation Plan'),
       ).toBeInTheDocument();
     });
 
-    it('shows text input with current name when editing', () => {
+    it('shows text input with current name when editing', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
 
-      const input = screen.getByDisplayValue('Test Remediation Plan');
+      const input = screen.getByRole('textbox', { name: /rename input/i });
       expect(input).toBeInTheDocument();
       expect(input).toHaveFocus();
     });
 
-    it('updates input value when typing', () => {
+    it('shows duplicate error when name already exists', async () => {
+      const user = userEvent.setup();
+      mockUseVerifyName.mockReturnValue([false, true]);
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
 
-      fireEvent.change(input, { target: { value: 'Updated Plan Name' } });
-      expect(screen.getByDisplayValue('Updated Plan Name')).toBeInTheDocument();
-    });
-
-    it('shows duplicate error when name already exists', () => {
-      mockUseVerifyName.mockReturnValue([false, true]); // [isVerifying, isDuplicate]
-      renderComponent();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-
-      // Change to a name that would trigger duplicate
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-      fireEvent.change(input, { target: { value: 'Existing Plan 1' } });
+      const input = screen.getByRole('textbox', { name: /rename input/i });
+      await user.clear(input);
+      await user.type(input, 'Existing Plan 1');
 
       expect(
         screen.getByText(
@@ -297,78 +282,42 @@ describe('DetailsCard', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows empty error when name is empty', () => {
+    it('shows empty error when name is empty', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
+      const input = screen.getByRole('textbox', { name: /rename input/i });
 
-      fireEvent.change(input, { target: { value: '' } });
+      await user.clear(input);
 
       expect(
         screen.getByText(/Playbook name cannot be empty/),
       ).toBeInTheDocument();
-    });
-
-    it('shows checking state when verifying name', () => {
-      mockUseVerifyName.mockReturnValue([true, false]); // [isVerifying, isDuplicate]
-      renderComponent();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      // The checking state is handled internally, we can verify the hook is called
-      expect(useVerifyName.useVerifyName).toHaveBeenCalled();
-    });
-
-    it('disables save button when name is invalid', () => {
-      renderComponent();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-
-      fireEvent.change(input, { target: { value: '' } });
-
-      // After entering edit mode, there should be more buttons including save/cancel
-      const editButtons = screen.getAllByRole('button');
-      // The save button should be disabled when name is invalid
-      // We'll check by trying to find a disabled button
-      const disabledButtons = editButtons.filter((btn) => btn.disabled);
-      expect(disabledButtons.length).toBeGreaterThan(0);
-    });
-
-    it('enables save button when name is valid and changed', () => {
-      renderComponent();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-
-      fireEvent.change(input, { target: { value: 'New Valid Name' } });
-
-      // When name is valid, save button should not be disabled
-      const editButtons = screen.getAllByRole('button');
-      const disabledButtons = editButtons.filter((btn) => btn.disabled);
-      // There should be fewer or no disabled buttons now
-      expect(disabledButtons.length).toBeLessThanOrEqual(1);
+      expect(
+        screen.getByRole('button', { name: /save remediation plan name/i }),
+      ).toBeDisabled();
     });
 
     it('saves name and exits edit mode when save is clicked', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-
-      fireEvent.change(input, { target: { value: 'Updated Name' } });
-
-      // Find and click the first non-disabled button (should be save)
-      const editButtons = screen.getAllByRole('button');
-      const saveButton = editButtons.find(
-        (btn) => !btn.disabled && btn !== buttons[0],
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
       );
-      fireEvent.click(saveButton);
+      const input = screen.getByRole('textbox', { name: /rename input/i });
+
+      await user.clear(input);
+      await user.type(input, 'Updated Name');
+
+      await user.click(
+        screen.getByRole('button', { name: /save remediation plan name/i }),
+      );
 
       await waitFor(() => {
         expect(mockUpdateRemPlan).toHaveBeenCalledWith({
@@ -377,52 +326,76 @@ describe('DetailsCard', () => {
         });
       });
 
-      await waitFor(() => {
-        expect(mockRefetch).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-        expect(mockRefetchAllRemediations).toHaveBeenCalled();
-      });
-
+      expect(mockRefetch).toHaveBeenCalled();
+      expect(mockRefetchAllRemediations).toHaveBeenCalled();
+      expect(mockAddNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Remediation plan renamed',
+          variant: 'success',
+        }),
+      );
       expect(
-        screen.queryByDisplayValue('Updated Name'),
+        screen.queryByRole('textbox', { name: /rename input/i }),
       ).not.toBeInTheDocument();
     });
 
-    it('cancels editing when cancel button is clicked', async () => {
+    it('shows an error notification when save fails', async () => {
+      const user = userEvent.setup();
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      mockUpdateRemPlan.mockRejectedValueOnce(new Error('rename failed'));
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]); // Enter edit mode
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
+      const input = screen.getByRole('textbox', { name: /rename input/i });
 
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-      fireEvent.change(input, { target: { value: 'Changed Name' } });
+      await user.clear(input);
+      await user.type(input, 'Updated Name');
+      await user.click(
+        screen.getByRole('button', { name: /save remediation plan name/i }),
+      );
 
-      // Find all buttons in edit mode
-      const editButtons = screen.getAllByRole('button');
-
-      // The cancel button should be the one with TimesIcon - look for the last button
-      // or we can click it by finding a button that's not disabled and not the first one
-      const cancelButton =
-        editButtons.find(
-          (btn, index) =>
-            index > 0 && // Not the edit button (first one)
-            !btn.disabled && // Not disabled
-            btn !== editButtons.find((b) => !b.disabled && b !== buttons[0]), // Not the save button
-        ) || editButtons[editButtons.length - 1]; // Fallback to last button
-
-      fireEvent.click(cancelButton);
-
-      // After cancel, we should see the original text again (not in edit mode)
       await waitFor(() => {
-        expect(screen.getByText('Test Remediation Plan')).toBeInTheDocument();
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(mockAddNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Failed to update playbook name',
+            variant: 'danger',
+          }),
+        );
       });
 
-      // And the input should no longer be visible
+      expect(mockRefetch).not.toHaveBeenCalled();
+      expect(mockRefetchAllRemediations).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('cancels editing when cancel button is clicked', async () => {
+      const user = userEvent.setup();
+
+      renderComponent();
+
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
+      const input = screen.getByRole('textbox', { name: /rename input/i });
+
+      await user.clear(input);
+      await user.type(input, 'Changed Name');
+      await user.click(
+        screen.getByRole('button', {
+          name: /cancel remediation plan name edit/i,
+        }),
+      );
+
       expect(
-        screen.queryByDisplayValue('Changed Name'),
+        screen.queryByRole('textbox', { name: /rename input/i }),
       ).not.toBeInTheDocument();
+      expect(screen.getByText('Test Remediation Plan')).toBeInTheDocument();
     });
   });
 
@@ -431,55 +404,70 @@ describe('DetailsCard', () => {
       renderComponent();
 
       const toggle = screen.getByRole('switch');
-      expect(toggle).toBeInTheDocument();
-      expect(toggle).toBeChecked(); // auto_reboot is true in mockDetails
-      expect(screen.queryByText(/Auto-reboot:\s*Off/i)).not.toBeInTheDocument();
+      expect(toggle).toBeChecked();
       expect(screen.getByText(/Auto-reboot:\s*On/i)).toBeInTheDocument();
     });
 
     it('displays switch as unchecked when auto_reboot is false', () => {
-      const detailsWithNoReboot = { ...mockDetails, auto_reboot: false };
-      renderComponent({ details: detailsWithNoReboot });
+      renderComponent({
+        details: { ...mockDetails, auto_reboot: false },
+      });
 
       const toggle = screen.getByRole('switch');
       expect(toggle).not.toBeChecked();
       expect(screen.getByText(/Auto-reboot:\s*Off/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Auto-reboot:\s*On/i)).not.toBeInTheDocument();
     });
 
-    it('calls updateRemPlan when toggle is changed', () => {
+    it('calls updateRemPlan when toggle is changed', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const toggle = screen.getByRole('switch');
-      fireEvent.click(toggle);
+      await user.click(screen.getByRole('switch'));
 
-      expect(mockUpdateRemPlan).toHaveBeenCalledWith({
-        id: 'remediation-123',
-        auto_reboot: false, // Should toggle from true to false
+      await waitFor(() => {
+        expect(mockUpdateRemPlan).toHaveBeenCalledWith({
+          id: 'remediation-123',
+          auto_reboot: false,
+        });
       });
+      expect(mockRefetch).toHaveBeenCalled();
     });
 
-    it('updates local state when toggle is changed', () => {
+    it('reverts the toggle and shows an error notification when update fails', async () => {
+      const user = userEvent.setup();
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      mockUpdateRemPlan.mockRejectedValueOnce(new Error('toggle failed'));
+
       renderComponent();
 
       const toggle = screen.getByRole('switch');
-      expect(toggle).toBeChecked();
+      await user.click(toggle);
 
-      fireEvent.click(toggle);
-      expect(toggle).not.toBeChecked();
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(mockAddNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Failed to update auto-reboot setting',
+            variant: 'danger',
+          }),
+        );
+      });
 
-      // Click again to toggle back
-      fireEvent.click(toggle);
       expect(toggle).toBeChecked();
+      consoleErrorSpy.mockRestore();
     });
   });
 
   describe('Navigation', () => {
-    it('navigates to actions tab when actions link is clicked', () => {
+    it('navigates to actions tab when actions link is clicked', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const actionsLink = screen.getByText('2 actions');
-      fireEvent.click(actionsLink);
+      await user.click(screen.getByText('2 actions'));
 
       expect(mockOnNavigateToTab).toHaveBeenCalledWith(
         null,
@@ -487,28 +475,16 @@ describe('DetailsCard', () => {
       );
     });
 
-    it('navigates to systems tab when systems link is clicked', () => {
+    it('navigates to systems tab when systems link is clicked', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const systemsLink = screen.getByText('10 systems');
-      fireEvent.click(systemsLink);
+      await user.click(screen.getByText('10 systems'));
 
       expect(mockOnNavigateToTab).toHaveBeenCalledWith(
         null,
         'plannedRemediations:systems',
-      );
-    });
-
-    it('navigates to execution history when status link is clicked', () => {
-      renderComponent();
-
-      // Find the button that contains the exec-status element
-      const statusButton = screen.getByRole('button', { name: /succeeded/i });
-      fireEvent.click(statusButton);
-
-      expect(mockOnNavigateToTab).toHaveBeenCalledWith(
-        null,
-        'executionHistory',
       );
     });
   });
@@ -518,120 +494,65 @@ describe('DetailsCard', () => {
       renderComponent();
 
       const learnMoreLink = screen.getByRole('link', { name: /learn more/i });
-      expect(learnMoreLink).toHaveAttribute(
-        'href',
-        'https://docs.redhat.com/en/documentation/red_hat_lightspeed/1-latest/html-single/red_hat_lightspeed_remediations_guide/index#creating-remediation-plans_red-hat-lightspeed-remediation-guide',
-      );
+      expect(learnMoreLink).toHaveAttribute('href', learnMoreUrl);
       expect(learnMoreLink).toHaveAttribute('target', '_blank');
     });
 
     it('displays help icon for actions section', () => {
       renderComponent();
 
-      // The help icon should be present in the Actions section
-      // We can verify by checking that the Actions text is rendered
       expect(screen.getByText('Actions')).toBeInTheDocument();
-    });
-
-    it('handles missing remediation status gracefully', () => {
-      renderComponent({ remediationStatus: null });
-
-      // Should handle null remediationStatus without crashing
-      expect(screen.getByText('Details')).toBeInTheDocument();
-    });
-
-    it('handles missing playbook runs gracefully', () => {
-      renderComponent({ remediationPlaybookRuns: null });
-
-      // Should still render the component
-      expect(screen.getByText('Details')).toBeInTheDocument();
     });
   });
 
   describe('Props Handling', () => {
-    it('handles missing onNavigateToTab prop', () => {
-      renderComponent({ onNavigateToTab: undefined });
+    it('handles missing optional props', () => {
+      renderComponent({
+        onNavigateToTab: undefined,
+        updateRemPlan: undefined,
+        allRemediations: undefined,
+      });
 
-      // Should render without crashing
-      expect(screen.getByText('Details')).toBeInTheDocument();
-    });
-
-    it('handles missing updateRemPlan prop', () => {
-      renderComponent({ updateRemPlan: undefined });
-
-      // Should render without crashing
-      expect(screen.getByText('Details')).toBeInTheDocument();
-    });
-
-    it('handles missing allRemediations prop', () => {
-      renderComponent({ allRemediations: undefined });
-
-      // Should render without crashing
-      expect(screen.getByText('Details')).toBeInTheDocument();
-    });
-
-    it('handles undefined remediationStatus totalSystems', () => {
-      renderComponent({ remediationStatus: {} });
-
-      // Should handle undefined totalSystems
       expect(screen.getByText('Details')).toBeInTheDocument();
     });
   });
 
   describe('Edge Cases', () => {
-    it('handles details with empty issues array', () => {
-      const emptyDetails = {
-        ...mockDetails,
-        issues: [],
-        issue_count: 0,
-        system_count: 0,
-      };
-      renderComponent({ details: emptyDetails });
+    it('handles details with empty counts', () => {
+      renderComponent({
+        details: {
+          ...mockDetails,
+          issue_count: 0,
+          system_count: 0,
+        },
+      });
 
       expect(screen.getByText('0 actions')).toBeInTheDocument();
-    });
-
-    it('handles details with missing created_at date', () => {
-      const detailsWithoutDate = { ...mockDetails, created_at: undefined };
-      renderComponent({ details: detailsWithoutDate });
-
-      // Should still render without crashing
-      expect(screen.getByText('Details')).toBeInTheDocument();
+      expect(screen.getByText('0 systems')).toBeInTheDocument();
     });
 
     it('handles very long remediation names', () => {
       const longName = 'A'.repeat(200);
-      const longNameDetails = { ...mockDetails, name: longName };
-      renderComponent({ details: longNameDetails });
+
+      renderComponent({
+        details: { ...mockDetails, name: longName },
+      });
 
       expect(screen.getByText(longName)).toBeInTheDocument();
     });
 
-    it('handles special characters in remediation name', () => {
-      const specialName = 'Test & <script>alert("xss")</script> Plan';
-      const specialDetails = { ...mockDetails, name: specialName };
-      renderComponent({ details: specialDetails });
-
-      expect(screen.getByText(specialName)).toBeInTheDocument();
-    });
-
     it('updates name state when details prop changes', () => {
       const { rerender } = renderComponent();
-
       const newDetails = { ...mockDetails, name: 'Updated External Name' };
+
       rerender(
         <DetailsCard
           details={newDetails}
-          remediationStatus={mockRemediationStatus}
           updateRemPlan={mockUpdateRemPlan}
           onNavigateToTab={mockOnNavigateToTab}
           allRemediations={mockAllRemediations}
           refetch={mockRefetch}
-          remediationPlaybookRuns={mockRemediationPlaybookRuns}
           refetchAllRemediations={mockRefetchAllRemediations}
-          onRename={jest.fn()}
-          onToggleAutoreboot={jest.fn()}
-          onViewActions={jest.fn()}
         />,
       );
 
@@ -643,52 +564,29 @@ describe('DetailsCard', () => {
     it('calls useVerifyName with correct parameters', () => {
       renderComponent();
 
-      // Should be called with filtered list (excluding current remediation)
       expect(useVerifyName.useVerifyName).toHaveBeenCalledWith(
         'Test Remediation Plan',
         mockAllRemediations,
       );
     });
 
-    it('re-calls useVerifyName when name changes during editing', () => {
+    it('re-calls useVerifyName when name changes during editing', async () => {
+      const user = userEvent.setup();
+
       renderComponent();
 
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
+      await user.click(
+        screen.getByRole('button', { name: /edit remediation plan name/i }),
+      );
+      const input = screen.getByRole('textbox', { name: /rename input/i });
 
-      fireEvent.change(input, { target: { value: 'New Name' } });
+      await user.clear(input);
+      await user.type(input, 'New Name');
 
-      // useVerifyName should be called with the new value
       expect(useVerifyName.useVerifyName).toHaveBeenCalledWith(
         'New Name',
         mockAllRemediations,
       );
-    });
-
-    it('handles concurrent edit operations', async () => {
-      renderComponent();
-
-      const buttons = screen.getAllByRole('button');
-      fireEvent.click(buttons[0]);
-      const input = screen.getByDisplayValue('Test Remediation Plan');
-
-      fireEvent.change(input, { target: { value: 'Name 1' } });
-
-      // Find and click save button
-      const editButtons = screen.getAllByRole('button');
-      const saveButton = editButtons.find(
-        (btn) => !btn.disabled && btn !== buttons[0],
-      );
-      fireEvent.click(saveButton);
-
-      // Start another edit before the first completes
-      const newButtons = screen.getAllByRole('button');
-      fireEvent.click(newButtons[0]);
-
-      await waitFor(() => {
-        expect(mockUpdateRemPlan).toHaveBeenCalled();
-      });
     });
   });
 });

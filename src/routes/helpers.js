@@ -8,6 +8,9 @@ import {
   BanIcon,
 } from '@patternfly/react-icons';
 import InsightsLink from '@redhat-cloud-services/frontend-components/InsightsLink';
+import { pluralize } from '../Utilities/utils';
+
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 const STATUS_META = {
   success: {
@@ -38,6 +41,31 @@ const STATUS_META = {
 export const getStatusMeta = (status = '') => {
   if (!status || typeof status !== 'string') return null;
   return STATUS_META[status.toLowerCase()] ?? null;
+};
+
+export const calculateExpiresInDays = (expiresAtDate) => {
+  // Expects a valid Date. Unknown or invalid expiration values are handled
+  // before this helper is called.
+  const msUntilExpiration = expiresAtDate.getTime() - Date.now();
+  const daysUntilExpiration = msUntilExpiration / DAY_IN_MS;
+
+  // Future expirations round up so partial days still read as time remaining:
+  // e.g. +19.5 days => 20 days remaining.
+  // Past expirations round down so anything already expired stays negative:
+  // e.g. -0.5 day => -1, not -0/0.
+  // This keeps "expired earlier today" in the expired state instead of
+  // showing it as if the plan still had 0 days remaining.
+  return msUntilExpiration < 0
+    ? Math.floor(daysUntilExpiration)
+    : Math.ceil(daysUntilExpiration);
+};
+
+export const textualizeExpiresInDays = (expiresInDays) => {
+  if (expiresInDays < 30) {
+    return pluralize(expiresInDays, 'day');
+  }
+
+  return pluralize(Math.floor(expiresInDays / 30), 'month');
 };
 
 export const StatusLabel = ({ status = '' }) => {
