@@ -436,6 +436,23 @@ describe('routes/Cells', () => {
       ).not.toBeInTheDocument();
     });
 
+    it('should not display warning icon when warning config is unavailable', () => {
+      const expiresAt = new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
+
+      render(
+        <ExpirationCell
+          expires_at={expiresAt.toISOString()}
+          plan_warning_days={7}
+          isWarningWindowEnabled={false}
+        />,
+      );
+
+      expect(screen.getByText('6 days')).toBeInTheDocument();
+      expect(
+        screen.queryByLabelText('Expiration warning'),
+      ).not.toBeInTheDocument();
+    });
+
     it('should display remaining months for longer expirations', () => {
       const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 

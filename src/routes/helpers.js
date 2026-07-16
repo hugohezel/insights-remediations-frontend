@@ -69,11 +69,6 @@ export const parseExpiresAt = (expiresAt) => {
   return isNaN(expiresAtDate.getTime()) ? null : expiresAtDate;
 };
 
-export const getExpiresInDays = (expiresAt) => {
-  const expiresAtDate = parseExpiresAt(expiresAt);
-  return expiresAtDate ? calculateExpiresInDays(expiresAtDate) : null;
-};
-
 export const textualizeExpiresInDays = (expiresInDays) => {
   if (expiresInDays < 30) {
     return pluralize(expiresInDays, 'day');
@@ -82,20 +77,46 @@ export const textualizeExpiresInDays = (expiresInDays) => {
   return pluralize(Math.floor(expiresInDays / 30), 'month');
 };
 
-export const shouldShowExpirationWarning = (expiresInDays, warningDays) => {
-  const normalizedWarningDays = Number(warningDays);
-
-  if (!Number.isFinite(expiresInDays)) {
+export const isWithinExpirationWarningWindow = (expiresInDays, warningDays) => {
+  if (expiresInDays < 0) {
     return false;
   }
 
-  if (expiresInDays < 0) {
-    return true;
+  return expiresInDays <= Number(warningDays);
+};
+
+export const getExpirationState = ({
+  expiresAt,
+  warningDays,
+  isWarningWindowEnabled = true,
+}) => {
+  const expiresAtDate = parseExpiresAt(expiresAt);
+
+  if (!expiresAtDate) {
+    return {
+      status: 'unknown',
+      expiresAtDate: null,
+      expiresInDays: null,
+      durationText: null,
+    };
   }
 
-  return Number.isFinite(normalizedWarningDays)
-    ? expiresInDays <= normalizedWarningDays
-    : false;
+  const expiresInDays = calculateExpiresInDays(expiresAtDate);
+  const isExpired = expiresInDays < 0;
+  const isWithinWarningWindow =
+    isWarningWindowEnabled &&
+    isWithinExpirationWarningWindow(expiresInDays, warningDays);
+
+  return {
+    status: isExpired
+      ? 'expired'
+      : isWithinWarningWindow
+        ? 'warning'
+        : 'normal',
+    expiresAtDate,
+    expiresInDays,
+    durationText: isExpired ? null : textualizeExpiresInDays(expiresInDays),
+  };
 };
 
 export const StatusLabel = ({ status = '' }) => {

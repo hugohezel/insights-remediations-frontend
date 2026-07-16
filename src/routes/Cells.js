@@ -9,11 +9,7 @@ import {
   InProgressIcon,
 } from '@patternfly/react-icons';
 import { getTimeAgo } from './RemediationDetailsComponents/helpers';
-import {
-  getExpiresInDays,
-  shouldShowExpirationWarning,
-  textualizeExpiresInDays,
-} from './helpers';
+import { getExpirationState } from './helpers';
 
 export const formatDate = (dateStr) => {
   if (!dateStr) {
@@ -132,19 +128,24 @@ export const LastModifiedCell = ({ updated_at }) => {
   );
 };
 
-export const ExpirationCell = ({ expires_at, plan_warning_days }) => {
-  const expiresInDays = getExpiresInDays(expires_at);
+export const ExpirationCell = ({
+  expires_at,
+  plan_warning_days,
+  isWarningWindowEnabled = true,
+}) => {
+  const expiration = getExpirationState({
+    expiresAt: expires_at,
+    warningDays: plan_warning_days,
+    isWarningWindowEnabled,
+  });
 
-  if (expiresInDays === null) {
+  if (expiration.status === 'unknown') {
     return <Content component="p">N/A</Content>;
   }
 
-  const shouldShowWarning = shouldShowExpirationWarning(
-    expiresInDays,
-    plan_warning_days,
-  );
   const displayValue =
-    expiresInDays < 0 ? 'Expired' : textualizeExpiresInDays(expiresInDays);
+    expiration.status === 'expired' ? 'Expired' : expiration.durationText;
+  const shouldShowWarning = expiration.status !== 'normal';
 
   return (
     <Tooltip content={formatDate(expires_at)}>
@@ -190,5 +191,6 @@ LastModifiedCell.propTypes = {
 };
 ExpirationCell.propTypes = {
   expires_at: PropTypes.string,
+  isWarningWindowEnabled: PropTypes.bool,
   plan_warning_days: PropTypes.number,
 };

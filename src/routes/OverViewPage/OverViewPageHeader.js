@@ -21,7 +21,10 @@ import RetentionPolicyModal from '../../components/RetentionPolicyModal';
 import RetentionPolicyDropdownItem from '../../components/RetentionPolicyDropdownItem';
 import { useIsOrgAdmin } from '../../Utilities/Hooks/useIsOrgAdmin';
 
-export const OverViewPageHeader = ({ hasRemediations }) => {
+export const OverViewPageHeader = ({
+  hasRemediations,
+  onRetentionPolicyUpdated,
+}) => {
   const { quickStarts } = useChrome();
   const { isOrgAdmin: canManageRetentionPolicy, isLoading: isOrgAdminLoading } =
     useIsOrgAdmin();
@@ -35,6 +38,7 @@ export const OverViewPageHeader = ({ hasRemediations }) => {
         <RetentionPolicyModal
           isOpen={retentionPolicyModalOpen}
           onClose={() => setRetentionPolicyModalOpen(false)}
+          onRetentionPolicyUpdated={onRetentionPolicyUpdated}
         />
       )}
       <Flex
@@ -123,4 +127,5 @@ export const OverViewPageHeader = ({ hasRemediations }) => {
 
 OverViewPageHeader.propTypes = {
   hasRemediations: PropTypes.bool,
+  onRetentionPolicyUpdated: PropTypes.func,
 };

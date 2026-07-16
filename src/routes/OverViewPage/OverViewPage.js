@@ -1,4 +1,4 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import columns from '../Columns';
 import useRemediations from '../../Utilities/Hooks/api/useRemediations';
 import RemediationsTable from '../../components/RemediationsTable/RemediationsTable';
@@ -62,7 +62,11 @@ export const OverViewPage = () => {
     useRemediations('getRemediations', {
       params: { fieldsData: ['name'] },
     });
-  const { result: orgConfig } = useRemediations(getOrgConfig);
+  const {
+    result: orgConfig,
+    error: orgConfigError,
+    refetch: refetchOrgConfig,
+  } = useRemediations(getOrgConfig);
 
   const { fetch: deleteRem } = useRemediations('deleteRemediation', {
     skip: true,
@@ -108,20 +112,28 @@ export const OverViewPage = () => {
         },
       },
     ];
-  }, [currentlySelected, handleBulkDeleteClick]);
+  }, [context.permissions.write, currentlySelected]);
 
   const items = useMemo(
     () =>
       result?.data?.map((item) => ({
         ...item,
         plan_warning_days: orgConfig?.plan_warning_days,
+        isWarningWindowEnabled:
+          !orgConfigError && orgConfig?.plan_warning_days > 0,
       })),
-    [orgConfig?.plan_warning_days, result?.data],
+    [orgConfig?.plan_warning_days, orgConfigError, result?.data],
   );
 
   const handleSingleDeleteClick = async (id) => {
     return deleteRem({ id });
   };
+
+  const handleRetentionPolicyUpdated = useCallback(() => {
+    refetchOrgConfig?.();
+    fetchRemediations?.();
+  }, [refetchOrgConfig, fetchRemediations]);
+
   return (
     <div>
       {isRenameModalOpen && (
@@ -178,6 +190,7 @@ export const OverViewPage = () => {
         <>
           <OverViewPageHeader
             hasRemediations={Boolean(allRemediations?.data?.length)}
+            onRetentionPolicyUpdated={handleRetentionPolicyUpdated}
           />
           <NoRemediationsPage />
         </>
@@ -185,6 +198,7 @@ export const OverViewPage = () => {
         <>
           <OverViewPageHeader
             hasRemediations={Boolean(allRemediations?.data?.length)}
+            onRetentionPolicyUpdated={handleRetentionPolicyUpdated}
           />
           <section className="pf-v6-u-ml-lg">
             <RemediationsTable

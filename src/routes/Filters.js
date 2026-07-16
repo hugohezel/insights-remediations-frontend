@@ -1,4 +1,5 @@
 import { conditionalFilterType } from '@redhat-cloud-services/frontend-components/ConditionalFilter';
+import { formatDuration } from '../Utilities/retentionPolicy';
 
 export const remediationNameFilter = [
   {
@@ -73,12 +74,12 @@ export const CreatedByFilter = [
   },
 ];
 
-const EXPIRATION_FILTER_ITEMS = [
-  { label: 'Within 7 days', value: '7' },
-  { label: 'Within 30 days', value: '30' },
-  { label: 'Within 3 months', value: '90' },
-  { label: 'Within 6 months', value: '180' },
-];
+const EXPIRATION_FILTER_VALUES = [7, 30, 90, 180];
+
+const EXPIRATION_FILTER_ITEMS = EXPIRATION_FILTER_VALUES.map((days) => ({
+  label: `Within ${formatDuration(days)}`,
+  value: String(days),
+}));
 
 export const ExpirationFilter = [
   {

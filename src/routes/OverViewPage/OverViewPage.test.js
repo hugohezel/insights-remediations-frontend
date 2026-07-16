@@ -556,6 +556,65 @@ describe('OverViewPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('suppresses expiration warning when org config cannot be loaded', async () => {
+    const expiresAt = new Date(
+      Date.now() + 6 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    mockRemediationsData = {
+      data: [
+        {
+          id: 'warning-row',
+          name: 'Expires soon',
+          playbook_runs: [],
+          expires_at: expiresAt,
+        },
+      ],
+      meta: { total: 1 },
+    };
+
+    useRemediations.mockImplementation((endpoint) => {
+      if (endpoint === 'getRemediations') {
+        return {
+          result: mockRemediationsData,
+          loading: false,
+          refetch: jest.fn(),
+          fetchAllIds: jest.fn().mockResolvedValue(['warning-row']),
+        };
+      }
+      if (endpoint === mockGetOrgConfig) {
+        return {
+          result: mockOrgConfig,
+          error: new Error('Failed to load organization configuration'),
+          loading: false,
+          refetch: jest.fn(),
+        };
+      }
+      if (endpoint === 'deleteRemediations') {
+        return {
+          fetchBatched: jest.fn().mockResolvedValue({}),
+        };
+      }
+      if (endpoint === 'deleteRemediation') {
+        return {
+          fetch: jest.fn().mockResolvedValue({}),
+        };
+      }
+      return {
+        result: null,
+        loading: false,
+        refetch: jest.fn(),
+      };
+    });
+
+    const view = renderPage(store);
+    cleanup = view.unmount;
+
+    expect(await screen.findByText('6 days')).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Expiration warning'),
+    ).not.toBeInTheDocument();
+  });
+
   it('calls download helper for single row', async () => {
     const user = userEvent.setup();
     const view = renderPage(store);
