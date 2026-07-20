@@ -27,14 +27,10 @@ import {
   ExclamationTriangleIcon,
   OutlinedQuestionCircleIcon,
 } from '@patternfly/react-icons';
-import { calculateExpiresInDays, textualizeExpiresInDays } from '../helpers';
+import { getExpirationState } from '../helpers';
 
-const getExpirationState = ({
-  expiresAtDate,
-  warningDays,
-  hasOrgConfigError,
-}) => {
-  if (!expiresAtDate) {
+const getActivityExpirationDisplay = (expiration) => {
+  if (expiration.status === 'unknown') {
     return {
       key: 'unknown',
       label: 'Expiration date unknown',
@@ -45,8 +41,7 @@ const getExpirationState = ({
     };
   }
 
-  const expiresInDays = calculateExpiresInDays(expiresAtDate);
-  if (expiresInDays < 0) {
+  if (expiration.status === 'expired') {
     return {
       key: 'expired',
       label: 'Expired',
@@ -57,16 +52,12 @@ const getExpirationState = ({
     };
   }
 
-  const remainingText = capitalize(
-    `${textualizeExpiresInDays(expiresInDays)} remaining`,
-  );
-  const isWarningWindowKnown = !hasOrgConfigError && warningDays > 0;
-  const isWithinWarningWindow =
-    isWarningWindowKnown && expiresInDays <= warningDays;
-  if (isWithinWarningWindow) {
+  const remainingText = capitalize(`${expiration.durationText} remaining`);
+
+  if (expiration.status === 'warning') {
     return {
       key: 'warning',
-      label: `Expires in ${textualizeExpiresInDays(expiresInDays)}`,
+      label: `Expires in ${expiration.durationText}`,
       labelStatus: 'warning',
       text: remainingText,
       icon: 'warning',
@@ -107,14 +98,13 @@ const ActivityCard = ({
   // Transform timestamp fields into dates
   // If the timestamp is invalid, set to null
   const updatedAtDate = toValidDate(lastRemediationPlaybookRun?.updated_at);
-  const expiresAtDate = toValidDate(details?.expires_at);
-
   const warningDays = orgConfig?.plan_warning_days;
   const expirationState = getExpirationState({
-    expiresAtDate,
+    expiresAt: details?.expires_at,
     warningDays,
-    hasOrgConfigError: Boolean(orgConfigError),
+    isWarningWindowEnabled: !orgConfigError && warningDays > 0,
   });
+  const expirationDisplay = getActivityExpirationDisplay(expirationState);
 
   // Build the retention period text from effective config
   const retentionDays = orgConfig?.plan_retention_days;
@@ -133,9 +123,9 @@ const ActivityCard = ({
           <Title headingLevel="h4" size="xl">
             Activity
           </Title>
-          {expirationState.label && (
-            <Label status={expirationState.labelStatus} variant="outline">
-              {expirationState.label}
+          {expirationDisplay.label && (
+            <Label status={expirationDisplay.labelStatus} variant="outline">
+              {expirationDisplay.label}
             </Label>
           )}
         </Flex>
@@ -203,17 +193,20 @@ const ActivityCard = ({
                 spaceItems={{ default: 'spaceItemsSm' }}
                 alignItems={{ default: 'alignItemsCenter' }}
               >
-                {expirationState.icon === 'danger' ? (
+                {expirationDisplay.icon === 'danger' ? (
                   <Icon status="danger" data-testid="icon">
                     <ExclamationCircleIcon />
                   </Icon>
-                ) : expirationState.icon === 'warning' ? (
+                ) : expirationDisplay.icon === 'warning' ? (
                   <Icon status="warning" data-testid="icon">
                     <ExclamationTriangleIcon />
                   </Icon>
                 ) : null}
-                {expirationState.hasTooltip ? (
-                  <Tooltip content={formatDate(expiresAtDate)} position="top">
+                {expirationDisplay.hasTooltip ? (
+                  <Tooltip
+                    content={formatDate(expirationState.expiresAtDate)}
+                    position="top"
+                  >
                     <span
                       style={{
                         textDecorationLine: 'underline',
@@ -224,11 +217,11 @@ const ActivityCard = ({
                         cursor: 'pointer',
                       }}
                     >
-                      {expirationState.text}
+                      {expirationDisplay.text}
                     </span>
                   </Tooltip>
                 ) : (
-                  <span>{expirationState.text}</span>
+                  <span>{expirationDisplay.text}</span>
                 )}
               </Flex>
             </DescriptionListDescription>

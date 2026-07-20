@@ -5,9 +5,11 @@ import InsightsLink from '@redhat-cloud-services/frontend-components/InsightsLin
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   InProgressIcon,
 } from '@patternfly/react-icons';
 import { getTimeAgo } from './RemediationDetailsComponents/helpers';
+import { getExpirationState } from './helpers';
 
 export const formatDate = (dateStr) => {
   if (!dateStr) {
@@ -126,6 +128,44 @@ export const LastModifiedCell = ({ updated_at }) => {
   );
 };
 
+export const ExpirationCell = ({
+  expires_at,
+  plan_warning_days,
+  isWarningWindowEnabled = true,
+}) => {
+  const expiration = getExpirationState({
+    expiresAt: expires_at,
+    warningDays: plan_warning_days,
+    isWarningWindowEnabled,
+  });
+
+  if (expiration.status === 'unknown') {
+    return <Content component="p">N/A</Content>;
+  }
+
+  const displayValue =
+    expiration.status === 'expired' ? 'Expired' : expiration.durationText;
+  const shouldShowWarning = expiration.status !== 'normal';
+
+  return (
+    <Tooltip content={formatDate(expires_at)}>
+      <Flex
+        spaceItems={{ default: 'spaceItemsXs' }}
+        alignItems={{ default: 'alignItemsCenter' }}
+      >
+        {shouldShowWarning && (
+          <span aria-label="Expiration warning">
+            <Icon status="warning">
+              <ExclamationTriangleIcon />
+            </Icon>
+          </span>
+        )}
+        <Content component="p">{displayValue}</Content>
+      </Flex>
+    </Tooltip>
+  );
+};
+
 Name.propTypes = {
   name: PropTypes.string,
   id: PropTypes.string,
@@ -148,4 +188,9 @@ CreatedCell.propTypes = {
 };
 LastModifiedCell.propTypes = {
   updated_at: PropTypes.string,
+};
+ExpirationCell.propTypes = {
+  expires_at: PropTypes.string,
+  isWarningWindowEnabled: PropTypes.bool,
+  plan_warning_days: PropTypes.number,
 };

@@ -5,7 +5,10 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import {
   calculateExpiresInDays,
+  getExpirationState,
   getStatusMeta,
+  isWithinExpirationWarningWindow,
+  parseExpiresAt,
   StatusLabel,
   getStatusText,
   getStatusColor,
@@ -56,40 +59,6 @@ jest.mock('@redhat-cloud-services/frontend-components/InsightsLink', () => {
 });
 
 describe('routes/helpers', () => {
-  describe('expiration helpers', () => {
-    const now = Date.parse('2026-07-08T12:00:00Z');
-
-    beforeEach(() => {
-      jest.spyOn(Date, 'now').mockReturnValue(now);
-    });
-
-    afterEach(() => {
-      jest.restoreAllMocks();
-    });
-
-    it('should round up remaining days until expiration', () => {
-      const expiresAtDate = new Date('2026-07-28T00:00:00Z');
-
-      expect(calculateExpiresInDays(expiresAtDate)).toBe(20);
-    });
-
-    it('should treat an expiration earlier today as expired', () => {
-      const expiresAtDate = new Date('2026-07-08T00:00:00Z');
-
-      expect(calculateExpiresInDays(expiresAtDate)).toBe(-1);
-    });
-
-    it('should render day-based expiration text for short periods', () => {
-      expect(textualizeExpiresInDays(20)).toBe('20 days');
-      expect(textualizeExpiresInDays(1)).toBe('1 day');
-    });
-
-    it('should render month-based expiration text for longer periods', () => {
-      expect(textualizeExpiresInDays(30)).toBe('1 month');
-      expect(textualizeExpiresInDays(69)).toBe('2 months');
-    });
-  });
-
   describe('getStatusMeta', () => {
     it('should return success meta for success status', () => {
       const result = getStatusMeta('success');
@@ -312,6 +281,142 @@ describe('routes/helpers', () => {
         expect(getStatusColor('canceled')).toBe('red');
         expect(getStatusColor('unknown')).toBeNull();
       }
+    });
+  });
+
+  describe('expiration helpers', () => {
+    const now = Date.parse('2026-07-08T12:00:00Z');
+
+    beforeEach(() => {
+      jest.spyOn(Date, 'now').mockReturnValue(now);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should parse a valid expiration date', () => {
+      const result = parseExpiresAt('2026-07-20T12:00:00Z');
+
+      expect(result).toEqual(new Date('2026-07-20T12:00:00Z'));
+    });
+
+    it('should return null for invalid expiration date', () => {
+      expect(parseExpiresAt('not-a-date')).toBeNull();
+      expect(parseExpiresAt(undefined)).toBeNull();
+      expect(parseExpiresAt(null)).toBeNull();
+    });
+
+    it('should round future expiration up to the next day', () => {
+      const now = Date.now();
+      const result = calculateExpiresInDays(
+        new Date(now + 1.5 * 24 * 60 * 60 * 1000),
+      );
+
+      expect(result).toBe(2);
+    });
+
+    it('should round past expiration down to keep it expired', () => {
+      const now = Date.now();
+      const result = calculateExpiresInDays(
+        new Date(now - 0.5 * 24 * 60 * 60 * 1000),
+      );
+
+      expect(result).toBe(-1);
+    });
+
+    it('should textualize days below 30 days', () => {
+      expect(textualizeExpiresInDays(7)).toBe('7 days');
+      expect(textualizeExpiresInDays(1)).toBe('1 day');
+    });
+
+    it('should textualize longer windows as months', () => {
+      expect(textualizeExpiresInDays(30)).toBe('1 month');
+      expect(textualizeExpiresInDays(90)).toBe('3 months');
+      expect(textualizeExpiresInDays(180)).toBe('6 months');
+    });
+
+    it('should return true when expiration is within warning period', () => {
+      expect(isWithinExpirationWarningWindow(6, 7)).toBe(true);
+      expect(isWithinExpirationWarningWindow(7, 7)).toBe(true);
+    });
+
+    it('should return false when the plan has already expired', () => {
+      expect(isWithinExpirationWarningWindow(-1, 7)).toBe(false);
+      expect(isWithinExpirationWarningWindow(-30, 7)).toBe(false);
+    });
+
+    it('should return false when expiration is outside warning period', () => {
+      expect(isWithinExpirationWarningWindow(8, 7)).toBe(false);
+      expect(isWithinExpirationWarningWindow(6, undefined)).toBe(false);
+    });
+
+    it('should return an unknown expiration state for invalid dates', () => {
+      expect(
+        getExpirationState({ expiresAt: 'invalid-date', warningDays: 7 }),
+      ).toEqual({
+        status: 'unknown',
+        expiresAtDate: null,
+        expiresInDays: null,
+        durationText: null,
+      });
+    });
+
+    it('should return a warning expiration state within the warning window', () => {
+      expect(
+        getExpirationState({
+          expiresAt: '2026-07-28T00:00:00Z',
+          warningDays: 30,
+        }),
+      ).toEqual({
+        status: 'warning',
+        expiresAtDate: new Date('2026-07-28T00:00:00Z'),
+        expiresInDays: 20,
+        durationText: '20 days',
+      });
+    });
+
+    it('should return a normal expiration state outside the warning window', () => {
+      expect(
+        getExpirationState({
+          expiresAt: '2026-09-15T00:00:00Z',
+          warningDays: 30,
+        }),
+      ).toEqual({
+        status: 'normal',
+        expiresAtDate: new Date('2026-09-15T00:00:00Z'),
+        expiresInDays: 69,
+        durationText: '2 months',
+      });
+    });
+
+    it('should return an expired expiration state', () => {
+      expect(
+        getExpirationState({
+          expiresAt: '2026-07-08T00:00:00Z',
+          warningDays: 30,
+        }),
+      ).toEqual({
+        status: 'expired',
+        expiresAtDate: new Date('2026-07-08T00:00:00Z'),
+        expiresInDays: -1,
+        durationText: null,
+      });
+    });
+
+    it('should suppress warning-window state when warning config is unavailable', () => {
+      expect(
+        getExpirationState({
+          expiresAt: '2026-07-28T00:00:00Z',
+          warningDays: 30,
+          isWarningWindowEnabled: false,
+        }),
+      ).toEqual({
+        status: 'normal',
+        expiresAtDate: new Date('2026-07-28T00:00:00Z'),
+        expiresInDays: 20,
+        durationText: '20 days',
+      });
     });
   });
 

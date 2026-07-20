@@ -1,10 +1,11 @@
-import React, { useContext, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import columns from '../Columns';
 import useRemediations from '../../Utilities/Hooks/api/useRemediations';
 import RemediationsTable from '../../components/RemediationsTable/RemediationsTable';
 import {
   CreatedByFilter,
   ExecutionStatusFilter,
+  ExpirationFilter,
   LastExecutedFilter,
   LastModifiedFilter,
   remediationNameFilter,
@@ -28,6 +29,7 @@ import useRemediationFetchExtras from '../../api/useRemediationFetchExtras';
 import { OverViewPageHeader } from './OverViewPageHeader';
 import { PermissionContext } from '../../App';
 import chunk from 'lodash/chunk';
+import { getOrgConfig } from '../api';
 
 import TableEmptyState from './TableEmptyState';
 import { CalendarFilterType } from './CalendarFilterType';
@@ -60,6 +62,11 @@ export const OverViewPage = () => {
     useRemediations('getRemediations', {
       params: { fieldsData: ['name'] },
     });
+  const {
+    result: orgConfig,
+    error: orgConfigError,
+    refetch: refetchOrgConfig,
+  } = useRemediations(getOrgConfig);
 
   const { fetch: deleteRem } = useRemediations('deleteRemediation', {
     skip: true,
@@ -105,10 +112,28 @@ export const OverViewPage = () => {
         },
       },
     ];
-  }, [currentlySelected, handleBulkDeleteClick]);
+  }, [context.permissions.write, currentlySelected]);
+
+  const items = useMemo(
+    () =>
+      result?.data?.map((item) => ({
+        ...item,
+        plan_warning_days: orgConfig?.plan_warning_days,
+        isWarningWindowEnabled:
+          !orgConfigError && orgConfig?.plan_warning_days > 0,
+      })),
+    [orgConfig?.plan_warning_days, orgConfigError, result?.data],
+  );
+
   const handleSingleDeleteClick = async (id) => {
     return deleteRem({ id });
   };
+
+  const handleRetentionPolicyUpdated = useCallback(() => {
+    refetchOrgConfig?.();
+    fetchRemediations?.();
+  }, [refetchOrgConfig, fetchRemediations]);
+
   return (
     <div>
       {isRenameModalOpen && (
@@ -165,6 +190,7 @@ export const OverViewPage = () => {
         <>
           <OverViewPageHeader
             hasRemediations={Boolean(allRemediations?.data?.length)}
+            onRetentionPolicyUpdated={handleRetentionPolicyUpdated}
           />
           <NoRemediationsPage />
         </>
@@ -172,13 +198,14 @@ export const OverViewPage = () => {
         <>
           <OverViewPageHeader
             hasRemediations={Boolean(allRemediations?.data?.length)}
+            onRetentionPolicyUpdated={handleRetentionPolicyUpdated}
           />
           <section className="pf-v6-u-ml-lg">
             <RemediationsTable
               aria-label="OverViewTable"
               ouiaId="OverViewTable"
               loading={loading}
-              items={result?.data}
+              items={items}
               total={result?.meta?.total}
               columns={[...columns]}
               filters={{
@@ -188,6 +215,7 @@ export const OverViewPage = () => {
                   ...ExecutionStatusFilter,
                   ...LastModifiedFilter,
                   ...CreatedByFilter,
+                  ...ExpirationFilter,
                 ],
                 customFilterTypes: {
                   calendar: CalendarFilterType,

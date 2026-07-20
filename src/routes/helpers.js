@@ -60,12 +60,63 @@ export const calculateExpiresInDays = (expiresAtDate) => {
     : Math.ceil(daysUntilExpiration);
 };
 
+export const parseExpiresAt = (expiresAt) => {
+  if (!expiresAt) {
+    return null;
+  }
+
+  const expiresAtDate = new Date(expiresAt);
+  return isNaN(expiresAtDate.getTime()) ? null : expiresAtDate;
+};
+
 export const textualizeExpiresInDays = (expiresInDays) => {
   if (expiresInDays < 30) {
     return pluralize(expiresInDays, 'day');
   }
 
   return pluralize(Math.floor(expiresInDays / 30), 'month');
+};
+
+export const isWithinExpirationWarningWindow = (expiresInDays, warningDays) => {
+  if (expiresInDays < 0) {
+    return false;
+  }
+
+  return expiresInDays <= Number(warningDays);
+};
+
+export const getExpirationState = ({
+  expiresAt,
+  warningDays,
+  isWarningWindowEnabled = true,
+}) => {
+  const expiresAtDate = parseExpiresAt(expiresAt);
+
+  if (!expiresAtDate) {
+    return {
+      status: 'unknown',
+      expiresAtDate: null,
+      expiresInDays: null,
+      durationText: null,
+    };
+  }
+
+  const expiresInDays = calculateExpiresInDays(expiresAtDate);
+  const isExpired = expiresInDays < 0;
+  const isWithinWarningWindow =
+    isWarningWindowEnabled &&
+    isWithinExpirationWarningWindow(expiresInDays, warningDays);
+
+  return {
+    status: isExpired
+      ? 'expired'
+      : isWithinWarningWindow
+        ? 'warning'
+        : 'normal',
+    expiresAtDate,
+    expiresInDays,
+    durationText: isExpired ? null : textualizeExpiresInDays(expiresInDays),
+  };
 };
 
 export const StatusLabel = ({ status = '' }) => {
