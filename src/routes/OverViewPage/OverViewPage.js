@@ -223,7 +223,7 @@ export const OverViewPage = () => {
               }}
               options={{
                 sortBy: {
-                  index: 6,
+                  index: 7,
                   direction: 'desc',
                 },
                 manageColumns: true,
