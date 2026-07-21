@@ -74,7 +74,7 @@ export const textualizeExpiresInDays = (expiresInDays) => {
     return pluralize(expiresInDays, 'day');
   }
 
-  return pluralize(Math.floor(expiresInDays / 30), 'month');
+  return pluralize(Math.ceil(expiresInDays / 30), 'month');
 };
 
 export const isWithinExpirationWarningWindow = (expiresInDays, warningDays) => {

@@ -161,7 +161,7 @@ describe('ActivityCard', () => {
       });
 
       expect(screen.queryByText(/Expires in/i)).not.toBeInTheDocument();
-      expect(screen.getByText('2 months remaining')).toBeInTheDocument();
+      expect(screen.getByText('3 months remaining')).toBeInTheDocument();
     });
 
     it('falls back to an unknown expiration date and never-executed state when date data is missing', async () => {

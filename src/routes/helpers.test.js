@@ -332,6 +332,8 @@ describe('routes/helpers', () => {
 
     it('should textualize longer windows as months', () => {
       expect(textualizeExpiresInDays(30)).toBe('1 month');
+      expect(textualizeExpiresInDays(31)).toBe('2 months');
+      expect(textualizeExpiresInDays(69)).toBe('3 months');
       expect(textualizeExpiresInDays(90)).toBe('3 months');
       expect(textualizeExpiresInDays(180)).toBe('6 months');
     });
@@ -386,7 +388,7 @@ describe('routes/helpers', () => {
         status: 'normal',
         expiresAtDate: new Date('2026-09-15T00:00:00Z'),
         expiresInDays: 69,
-        durationText: '2 months',
+        durationText: '3 months',
       });
     });
 
