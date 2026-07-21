@@ -150,7 +150,7 @@ describe('ActivityCard', () => {
 
       expect(
         await screen.findByText(
-          /automatically deleted after 90 days of inactivity/i,
+          /automatically deleted after 3 months of inactivity/i,
         ),
       ).toBeInTheDocument();
     });

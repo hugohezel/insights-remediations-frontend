@@ -21,7 +21,8 @@ import { formatDate } from '../Cells';
 import { execStatus, toValidDate } from './helpers';
 import useRemediations from '../../Utilities/Hooks/api/useRemediations';
 import { getOrgConfig } from '../api';
-import { capitalize, pluralize } from '../../Utilities/utils';
+import { capitalize } from '../../Utilities/utils';
+import { formatDuration } from '../../Utilities/retentionPolicy';
 import {
   ExclamationCircleIcon,
   ExclamationTriangleIcon,
@@ -109,9 +110,7 @@ const ActivityCard = ({
   // Build the retention period text from effective config
   const retentionDays = orgConfig?.plan_retention_days;
   const retentionDurationText =
-    retentionDays != null
-      ? pluralize(retentionDays, 'day')
-      : 'an unknown period';
+    retentionDays != null ? formatDuration(retentionDays) : 'an unknown period';
 
   return (
     <Card isFullHeight>
