@@ -161,7 +161,7 @@ const ProgressCard = ({
           variant="link"
           icon={<ExternalLinkAltIcon />}
           component="a"
-          href="https://docs.redhat.com/en/documentation/red_hat_hybrid_cloud_console/1-latest/html/user-access-configuration-guide-for-role-based-access-control-rbac/index"
+          href="https://docs.redhat.com/en/documentation/red_hat_hybrid_cloud_console/1-latest/administer-manage_user_permissions_rbac_models"
           target="_blank"
           rel="noopener noreferrer"
         >
